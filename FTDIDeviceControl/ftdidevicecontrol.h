@@ -6,6 +6,24 @@
 #include "ui_ftdidevicecontrol.h"
 #include "ftd2xx.h"
 
+class CDecoder
+{
+public:
+	CDecoder();
+	bool pushByte(unsigned char b); // return if full kadr
+	void reset();
+	unsigned char getID();
+	unsigned short getLen();
+	const unsigned char* getData();
+
+private:
+	int m_syncState;
+	unsigned char m_kadr[2048];
+	unsigned short m_curPos;
+	unsigned short m_length;
+
+};
+
 class CWaitingThread : public QThread
 {
 	Q_OBJECT
@@ -17,6 +35,7 @@ public:
 
 signals:
 	void newData(const QString& );
+	void newKadr(unsigned char, unsigned short, const unsigned char*);//id len data
 
 private:	
 
@@ -25,6 +44,7 @@ private:
 	FT_HANDLE m_handle;
 
 	QString m_string;
+	CDecoder m_dec;
 
 };
 
@@ -51,6 +71,8 @@ private slots:
 	void addDataToTE(const QString& str);
 	void slOpen();
 	void slClose();
+	void slGetInfo(unsigned char n=0);
+	void slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData);
 };
 
 #endif // FTDIDEVICECONTROL_H

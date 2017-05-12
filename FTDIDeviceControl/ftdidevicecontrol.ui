@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>FTDIDeviceControl</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="ftdidevicecontrol.qrc">
+    <normaloff>:/FTDIDeviceControl/camera16.png</normaloff>:/FTDIDeviceControl/camera16.png</iconset>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout_3">
     <property name="leftMargin">
@@ -155,6 +159,13 @@
          <widget class="QLabel" name="label_6">
           <property name="text">
            <string>Firmware Version</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QPushButton" name="pbGetInfo">
+          <property name="text">
+           <string>Get Info</string>
           </property>
          </widget>
         </item>

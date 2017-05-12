@@ -1,6 +1,69 @@
 #include "ftdidevicecontrol.h"
 #include <QMessageBox>
 
+CDecoder::CDecoder()
+{
+	reset();
+}
+void CDecoder::reset()
+{
+	m_curPos=0;
+	m_syncState = 0;
+	m_curPos = 0;
+}
+
+bool CDecoder::pushByte(unsigned char b)
+{
+	switch(m_syncState)
+	{
+	case 0:		
+		if (b==0xA5){
+			m_syncState = 1;
+			m_kadr[0] = 0xA5;
+			m_curPos=1;
+		}
+		break;		
+	case 1:
+
+		if (b==0x5A) {
+			m_syncState = 2;
+			m_kadr[0] = 0x5A;
+			m_curPos=2;
+		}
+		else {
+			m_syncState=0;
+		}
+		break;
+	case 2:
+		m_kadr[m_curPos] = b;
+		if (m_curPos==4)
+			m_length = getLen();		
+		m_curPos = ((m_curPos+1)&2047);
+		if ((m_curPos>6)&&(m_curPos>=m_length+6)) {
+			reset();
+			return true;
+		}
+		break;
+	}
+	return false;
+}
+
+unsigned char CDecoder::getID()
+{
+	return m_kadr[5];
+}
+
+unsigned short CDecoder::getLen()
+{
+	return ((unsigned short)m_kadr[3]) + ((unsigned short)m_kadr[4])*256;
+}
+
+const unsigned char* CDecoder::getData()
+{
+	return &m_kadr[6];
+}
+
+
 
 CWaitingThread::CWaitingThread(FT_HANDLE aHandle, HANDLE ahEvent, QObject * parent)
 	: QThread(parent),m_handle(aHandle), m_hEvent(ahEvent), m_stop(false)
@@ -16,6 +79,7 @@ void CWaitingThread::run()
 		DWORD dwRead, dwRXBytes;
 		unsigned char b;
 		FT_STATUS status;
+		//waiting for packet with sync word 
 		WaitForSingleObject(m_hEvent, -1);
 
 		if(m_handle) {
@@ -26,6 +90,11 @@ void CWaitingThread::run()
 					status = FT_Read(m_handle, &b, 1, &dwRXBytes);
 					if(status == FT_OK) {
 						m_string+=b;
+						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
+						if (m_dec.pushByte(b))
+						{//got full kadr
+							emit newKadr(m_dec.getID(),m_dec.getLen(),m_dec.getData());
+						}
 					}
 					status = FT_GetQueueStatus(m_handle, &dwRead);
 				}
@@ -44,6 +113,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbSend, SIGNAL(clicked()),SLOT(slSend()));
 	connect(ui.pbOpen, SIGNAL(clicked()),SLOT(slOpen()));
 	connect(ui.pbClose, SIGNAL(clicked()),SLOT(slClose()));
+	connect(ui.pbGetInfo, SIGNAL(clicked()),SLOT(slGetInfo()));
 
 	FT_STATUS ftStatus;
 	unsigned numDevs=0;
@@ -91,6 +161,7 @@ void FTDIDeviceControl::openPort(int aNum)
 	ftStatus = FT_SetBaudRate(m_handle, 9600);
 	m_waitingThread = new CWaitingThread(m_handle, m_hEvent);
 	connect(m_waitingThread,SIGNAL(newData(const QString& )), SLOT(addDataToTE(const QString& )));
+	connect(m_waitingThread,SIGNAL(newKadr(unsigned char, unsigned short, const unsigned char*)), SLOT(slNewKadr(unsigned char, unsigned short, const unsigned char*)));
 	m_waitingThread->start();
 
 }
@@ -145,4 +216,38 @@ void FTDIDeviceControl::slOpen()
 void FTDIDeviceControl::slClose()
 {
 	closePort();
+}
+
+void FTDIDeviceControl::slGetInfo(unsigned char n)
+{
+	if(m_handle == NULL) {
+		QMessageBox::critical(this,"closed","need to open device");
+		return;
+	}
+	FT_STATUS ftStatus = FT_OK;
+	DWORD ret;
+	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, n, 0x00}; // get module type
+	ftStatus = FT_Write(m_handle, buff, 7, &ret);	
+
+}
+
+void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData)
+{
+	if ((!aData)||(!aLen))
+		return;
+	switch (aID){
+		case 0:
+			ui.leModuleType->setText(QString("%1").arg(aData[0]));
+			slGetInfo(1);
+			break;
+		case 1:
+			slGetInfo(2);
+			break;
+		case 2:
+			slGetInfo(3);
+			break;
+		case 3:
+			QMessageBox::information(this,"ok","ok");
+			break;
+	}
 }
