@@ -295,7 +295,7 @@ void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const 
 
 int FTDIDeviceControl::waitForPacket()
 {
-	for(int i=0;i<100;++i)
+	for(int i=0;i<500;++i)
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false)
