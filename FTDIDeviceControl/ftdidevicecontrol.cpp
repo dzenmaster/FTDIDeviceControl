@@ -4,12 +4,15 @@
 CDecoder::CDecoder()
 {
 	reset();
+	m_curKadr = 0;
+	m_lastKadr = 0;
 }
 void CDecoder::reset()
 {
 	m_curPos=0;
 	m_syncState = 0;
 	m_curPos = 0;
+
 }
 
 bool CDecoder::pushByte(unsigned char b)
@@ -19,7 +22,7 @@ bool CDecoder::pushByte(unsigned char b)
 	case 0:		
 		if (b==0xA5){
 			m_syncState = 1;
-			m_kadr[0] = 0xA5;
+			m_kadr[m_curKadr][0] = 0xA5;
 			m_curPos=1;
 		}
 		break;		
@@ -27,7 +30,7 @@ bool CDecoder::pushByte(unsigned char b)
 
 		if (b==0x5A) {
 			m_syncState = 2;
-			m_kadr[0] = 0x5A;
+			m_kadr[m_curKadr][0] = 0x5A;
 			m_curPos=2;
 		}
 		else {
@@ -35,12 +38,14 @@ bool CDecoder::pushByte(unsigned char b)
 		}
 		break;
 	case 2:
-		m_kadr[m_curPos] = b;
+		m_kadr[m_curKadr][m_curPos] = b;
 		if (m_curPos==4)
 			m_length = getLen();		
 		m_curPos = ((m_curPos+1)&2047);
 		if ((m_curPos>5)&&(m_curPos>=m_length+5)) {
 			reset();
+			m_lastKadr = m_curKadr;
+			m_curKadr = ((m_curKadr+1)&7);
 			return true;
 		}
 		break;
@@ -50,17 +55,17 @@ bool CDecoder::pushByte(unsigned char b)
 
 unsigned char CDecoder::getID()
 {
-	return m_kadr[5];
+	return m_kadr[m_lastKadr][5];
 }
 
 unsigned short CDecoder::getLen()
 {
-	return ((unsigned short)m_kadr[3]) + ((unsigned short)m_kadr[4])*256;
+	return ((unsigned short)m_kadr[m_lastKadr][3]) + ((unsigned short)m_kadr[m_lastKadr][4])*256;
 }
 
 const unsigned char* CDecoder::getData()
 {
-	return &m_kadr[6];
+	return &m_kadr[m_lastKadr][6];
 }
 
 
@@ -68,7 +73,7 @@ const unsigned char* CDecoder::getData()
 CWaitingThread::CWaitingThread(FT_HANDLE aHandle, HANDLE ahEvent, QObject * parent)
 	: QThread(parent),m_handle(aHandle), m_hEvent(ahEvent), m_stop(false)
 {
-
+	m_waitForPacket=false;
 }
 
 void CWaitingThread::run()
@@ -94,6 +99,7 @@ void CWaitingThread::run()
 						if (m_dec.pushByte(b))
 						{//got full kadr
 							emit newKadr(m_dec.getID(),m_dec.getLen(),m_dec.getData());
+							m_waitForPacket=false;
 						}
 					}
 					status = FT_GetQueueStatus(m_handle, &dwRead);
@@ -242,7 +248,7 @@ void FTDIDeviceControl::slClose()
 	closePort();
 }
 
-void FTDIDeviceControl::slGetInfo(unsigned char n)
+void FTDIDeviceControl::slGetInfo()
 {
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
@@ -250,9 +256,43 @@ void FTDIDeviceControl::slGetInfo(unsigned char n)
 	}
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;
-	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, n, 0x00}; // get module type
-	ftStatus = FT_Write(m_handle, buff, 7, &ret);	
+	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, 0x00 , 0x00}; // get module type
 
+	m_waitingThread->setWaitForPacket();
+	ftStatus = FT_Write(m_handle, buff, 7, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	if (waitForPacket()==1)
+		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+	buff[5] = 0x01; // get sn
+
+	m_waitingThread->setWaitForPacket();
+	ftStatus = FT_Write(m_handle, buff, 7, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	if (waitForPacket()==1)
+		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+	buff[5] = 0x02; // get f
+
+	m_waitingThread->setWaitForPacket();
+	ftStatus = FT_Write(m_handle, buff, 7, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	if (waitForPacket()==1)
+		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+	buff[5] = 0x03; // get s
+
+	m_waitingThread->setWaitForPacket();
+	ftStatus = FT_Write(m_handle, buff, 7, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	if (waitForPacket()==1)
+		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+	QMessageBox::information(this,"ok","ok");
 }
 
 void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData)
@@ -261,20 +301,27 @@ void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const 
 		return;
 	switch (aID){
 		case 0:
-			ui.leModuleType->setText(QString("%1").arg(aData[0]));
-			slGetInfo(1);
+			ui.leModuleType->setText(QString("%1").arg(aData[0]));			
 			break;
 		case 1:
-			ui.leSerialNumber->setText(QString("%1").arg(aData[0]));
-			slGetInfo(2);
+			ui.leSerialNumber->setText(QString("%1").arg(aData[0]));			
 			break;
 		case 2:
-			ui.leFirmwareVersion->setText(QString("%1").arg(aData[0]));
-			slGetInfo(3);
+			ui.leFirmwareVersion->setText(QString("%1").arg(aData[0]));			
 			break;
 		case 3:
-			ui.leSoftwareVersion->setText(QString("%1").arg(aData[0]));
-			QMessageBox::information(this,"ok","ok");
+			ui.leSoftwareVersion->setText(QString("%1").arg(aData[0]));			
 			break;
 	}
+}
+
+int FTDIDeviceControl::waitForPacket()
+{
+	for(int i=0;i<100;++i)
+	{
+		Sleep(16);
+		if (m_waitingThread->getWaitForPacket()==false)
+			return 0;
+	}
+	return 1;//need timeout;
 }

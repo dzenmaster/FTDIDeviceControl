@@ -18,9 +18,12 @@ public:
 
 private:
 	int m_syncState;
-	unsigned char m_kadr[2048];
+	unsigned char m_kadr[8][2048];
+	unsigned short m_curKadr;
+	unsigned short m_lastKadr;
 	unsigned short m_curPos;
 	unsigned short m_length;
+
 
 };
 
@@ -32,6 +35,8 @@ public:
 	CWaitingThread(FT_HANDLE aHandle,HANDLE ahEvent, QObject * parent = 0);
 	~CWaitingThread(){};
 	bool m_stop;
+	void setWaitForPacket(){m_waitForPacket=true;};
+	bool getWaitForPacket(){return m_waitForPacket;};
 
 signals:
 	void newData(const QString& );
@@ -45,6 +50,7 @@ private:
 
 	QString m_string;
 	CDecoder m_dec;
+	bool m_waitForPacket;
 
 };
 
@@ -62,16 +68,18 @@ private:
 	FT_HANDLE m_handle;
 	HANDLE m_hEvent;
 	CWaitingThread* m_waitingThread; 
+	
 
 	void openPort(int aNum);
 	void closePort();
+	int waitForPacket();
 
 private slots:
 	void slSend();
 	void addDataToTE(const QString& str);
 	void slOpen();
 	void slClose();
-	void slGetInfo(unsigned char n=0);
+	void slGetInfo();
 	void slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData);
 };
 
