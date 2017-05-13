@@ -89,7 +89,7 @@ void CWaitingThread::run()
 				while(dwRead) {
 					status = FT_Read(m_handle, &b, 1, &dwRXBytes);
 					if(status == FT_OK) {
-						m_string+=b;
+						m_string+=QString("0x%1").arg(b, 0, 16);
 						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
 						if (m_dec.pushByte(b))
 						{//got full kadr
