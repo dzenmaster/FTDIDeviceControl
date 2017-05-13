@@ -72,7 +72,7 @@ private:
 
 	void openPort(int aNum);
 	void closePort();
-	int waitForPacket();
+	int waitForPacket(int& tt);
 
 private slots:
 	void slSend();

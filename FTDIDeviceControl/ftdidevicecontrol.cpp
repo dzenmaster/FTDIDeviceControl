@@ -94,7 +94,7 @@ void CWaitingThread::run()
 				while(dwRead) {
 					status = FT_Read(m_handle, &b, 1, &dwRXBytes);
 					if(status == FT_OK) {
-						m_string+=QString("0x%1").arg(b, 0, 16);
+						m_string+=QString(" 0x%1").arg(b, 0, 16);
 						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
 						if (m_dec.pushByte(b))
 						{//got full kadr
@@ -120,6 +120,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbOpen, SIGNAL(clicked()),SLOT(slOpen()));
 	connect(ui.pbClose, SIGNAL(clicked()),SLOT(slClose()));
 	connect(ui.pbGetInfo, SIGNAL(clicked()),SLOT(slGetInfo()));
+	connect(ui.pbClear, SIGNAL(clicked()),ui.teReceive ,SLOT(clear()));
 
 	FT_STATUS ftStatus = FT_OK;
 	unsigned numDevs=0;
@@ -258,7 +259,7 @@ void FTDIDeviceControl::slGetInfo()
 	DWORD ret;
 	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, 0x00 , 0x00}; // get module type
 
-	for (unsigned char nc=0;nc<4;++nc){
+	for (unsigned char nc=0; nc < 4; ++nc){
 		buff[5] = nc; // get type sn firmware software
 
 		m_waitingThread->setWaitForPacket();
@@ -266,8 +267,15 @@ void FTDIDeviceControl::slGetInfo()
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
-		if (waitForPacket()==1)
-			QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+		int tt=0;
+		if (waitForPacket(tt)==1){
+			//QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+			ui.teReceive->append(" Wait timeout ");
+		}
+		else{
+			ui.teReceive->append(QString("good Wait %1ms ").arg(tt));
+		}
+		QApplication::processEvents();
 
 	}
 	QMessageBox::information(this,"ok","ok");
@@ -293,13 +301,15 @@ void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const 
 	}
 }
 
-int FTDIDeviceControl::waitForPacket()
+int FTDIDeviceControl::waitForPacket(int& tt )
 {
 	for(int i=0;i<500;++i)
 	{
 		Sleep(16);
-		if (m_waitingThread->getWaitForPacket()==false)
+		if (m_waitingThread->getWaitForPacket()==false){
+			tt=16*i;
 			return 0;
+		}
 	}
 	return 1;//need timeout;
 }
