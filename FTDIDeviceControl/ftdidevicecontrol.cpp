@@ -258,40 +258,18 @@ void FTDIDeviceControl::slGetInfo()
 	DWORD ret;
 	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, 0x00 , 0x00}; // get module type
 
-	m_waitingThread->setWaitForPacket();
-	ftStatus = FT_Write(m_handle, buff, 7, &ret);
-	if (ftStatus!=FT_OK) {
-		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
-	}
-	if (waitForPacket()==1)
-		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
-	buff[5] = 0x01; // get sn
+	for (unsigned char nc=0;nc<4;++nc){
+		buff[5] = nc; // get type sn firmware software
 
-	m_waitingThread->setWaitForPacket();
-	ftStatus = FT_Write(m_handle, buff, 7, &ret);
-	if (ftStatus!=FT_OK) {
-		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
-	}
-	if (waitForPacket()==1)
-		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
-	buff[5] = 0x02; // get f
+		m_waitingThread->setWaitForPacket();
+		ftStatus = FT_Write(m_handle, buff, 7, &ret);
+		if (ftStatus!=FT_OK) {
+			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+		}
+		if (waitForPacket()==1)
+			QMessageBox::critical(this, "Wait timeout", "Wait timeout");
 
-	m_waitingThread->setWaitForPacket();
-	ftStatus = FT_Write(m_handle, buff, 7, &ret);
-	if (ftStatus!=FT_OK) {
-		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 	}
-	if (waitForPacket()==1)
-		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
-	buff[5] = 0x03; // get s
-
-	m_waitingThread->setWaitForPacket();
-	ftStatus = FT_Write(m_handle, buff, 7, &ret);
-	if (ftStatus!=FT_OK) {
-		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
-	}
-	if (waitForPacket()==1)
-		QMessageBox::critical(this, "Wait timeout", "Wait timeout");
 	QMessageBox::information(this,"ok","ok");
 }
 
