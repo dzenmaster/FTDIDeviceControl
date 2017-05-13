@@ -158,7 +158,8 @@ void FTDIDeviceControl::openPort(int aNum)
 	FT_STATUS ftStatus = FT_OK;
 	ftStatus = FT_Open(aNum, &m_handle);
 	ftStatus = FT_SetEventNotification(m_handle, FT_EVENT_RXCHAR, m_hEvent);
-	ftStatus = FT_SetBaudRate(m_handle, 9600);
+	//ftStatus = FT_SetBaudRate(m_handle, 9600);
+	ftStatus = FT_SetBaudRate(m_handle, 115200);
 	m_waitingThread = new CWaitingThread(m_handle, m_hEvent);
 	connect(m_waitingThread,SIGNAL(newData(const QString& )), SLOT(addDataToTE(const QString& )));
 	connect(m_waitingThread,SIGNAL(newKadr(unsigned char, unsigned short, const unsigned char*)), SLOT(slNewKadr(unsigned char, unsigned short, const unsigned char*)));
