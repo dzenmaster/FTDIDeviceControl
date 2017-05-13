@@ -115,13 +115,13 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbClose, SIGNAL(clicked()),SLOT(slClose()));
 	connect(ui.pbGetInfo, SIGNAL(clicked()),SLOT(slGetInfo()));
 
-	FT_STATUS ftStatus;
+	FT_STATUS ftStatus = FT_OK;
 	unsigned numDevs=0;
 	void * p1;			
 
 	p1 = (void*)&numDevs;
 	ftStatus = FT_ListDevices(p1, NULL, FT_LIST_NUMBER_ONLY);	
-	if ((ftStatus == 0)&&(numDevs>0)) 
+	if ((ftStatus == FT_OK)&&(numDevs>0)) 
 	{
 		if (numDevs>9)
 			numDevs=9;
@@ -157,9 +157,26 @@ void FTDIDeviceControl::openPort(int aNum)
 	closePort();
 	FT_STATUS ftStatus = FT_OK;
 	ftStatus = FT_Open(aNum, &m_handle);
+	if (ftStatus!=FT_OK){
+		QMessageBox::critical(this, "FT_Open error", "FT_Open error");
+		return;
+	}
 	ftStatus = FT_SetEventNotification(m_handle, FT_EVENT_RXCHAR, m_hEvent);
+	if (ftStatus!=FT_OK){
+		QMessageBox::critical(this, "FT_SetEventNotification error", "FT_SetEventNotification error");
+		return;
+	}
 	//ftStatus = FT_SetBaudRate(m_handle, 9600);
 	ftStatus = FT_SetBaudRate(m_handle, 115200);
+	if (ftStatus!=FT_OK){
+		QMessageBox::critical(this, "FT_SetBaudRate error", "FT_SetBaudRate error");
+		return;
+	}
+	ftStatus = FT_SetDataCharacteristics(m_handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_SetDataCharacteristics error", "FT_SetDataCharacteristics error");
+		return;
+	}
 	m_waitingThread = new CWaitingThread(m_handle, m_hEvent);
 	connect(m_waitingThread,SIGNAL(newData(const QString& )), SLOT(addDataToTE(const QString& )));
 	connect(m_waitingThread,SIGNAL(newKadr(unsigned char, unsigned short, const unsigned char*)), SLOT(slNewKadr(unsigned char, unsigned short, const unsigned char*)));
@@ -178,7 +195,10 @@ void FTDIDeviceControl::closePort()
 	}
 
 	if (m_handle) {
-		FT_Close(m_handle);
+		FT_STATUS ftStatus = FT_Close(m_handle);
+		if (ftStatus!=FT_OK) {
+			QMessageBox::critical(this, "FT_Close error", "FT_Close error");			
+		}
 		m_handle = NULL;
 	}
 }
@@ -197,7 +217,10 @@ void FTDIDeviceControl::slSend()
 	}
 	else
 	{
-		ftStatus = FT_Write(m_handle, ba.data(), ba.size(), &ret);		
+		ftStatus = FT_Write(m_handle, ba.data(), ba.size(), &ret);	
+		if (ftStatus!=FT_OK) {
+			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+		}
 	}
 
 }
@@ -242,12 +265,15 @@ void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const 
 			slGetInfo(1);
 			break;
 		case 1:
+			ui.leSerialNumber->setText(QString("%1").arg(aData[0]));
 			slGetInfo(2);
 			break;
 		case 2:
+			ui.leFirmwareVersion->setText(QString("%1").arg(aData[0]));
 			slGetInfo(3);
 			break;
 		case 3:
+			ui.leSoftwareVersion->setText(QString("%1").arg(aData[0]));
 			QMessageBox::information(this,"ok","ok");
 			break;
 	}
