@@ -39,7 +39,7 @@ bool CDecoder::pushByte(unsigned char b)
 		if (m_curPos==4)
 			m_length = getLen();		
 		m_curPos = ((m_curPos+1)&2047);
-		if ((m_curPos>6)&&(m_curPos>=m_length+6)) {
+		if ((m_curPos>5)&&(m_curPos>=m_length+5)) {
 			reset();
 			return true;
 		}
