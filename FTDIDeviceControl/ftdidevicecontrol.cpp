@@ -170,14 +170,14 @@ void FTDIDeviceControl::slGetInfo()
 	}
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;
-	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, 0x00 , 0x00}; // get module type
+	char buff[] = {0xA5, 0x5A, 0x00, 0x01, 0x00, 0x00}; // get module type
 
 	bool tResult = true;
 	for (unsigned char nc=0; nc < 4; ++nc){
 		buff[5] = nc; // get type sn firmware software
 
 		m_waitingThread->setWaitForPacket();
-		ftStatus = FT_Write(m_handle, buff, 7, &ret);
+		ftStatus = FT_Write(m_handle, buff, 6, &ret);
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
@@ -191,7 +191,6 @@ void FTDIDeviceControl::slGetInfo()
 			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
 		}
 		QApplication::processEvents();
-
 	}
 	
 	ui.pbWriteFlash->setEnabled(tResult);
