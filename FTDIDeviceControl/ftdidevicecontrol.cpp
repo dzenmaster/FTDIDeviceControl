@@ -95,6 +95,10 @@ void CWaitingThread::run()
 					status = FT_Read(m_handle, &b, 1, &dwRXBytes);
 					if(status == FT_OK) {
 						m_string+=QString(" 0x%1").arg(b, 0, 16);
+						if ((b==0xA)||(b==0xD))
+						{
+							m_string+="\n";
+						}
 						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
 						if (m_dec.pushByte(b))
 						{//got full kadr
@@ -210,24 +214,30 @@ void FTDIDeviceControl::closePort()
 	}
 }
 
-void FTDIDeviceControl::slSend()
+QByteArray FTDIDeviceControl::hexStringToByteArray(QString& aStr)
 {
-	FT_STATUS ftStatus = FT_OK;
-	DWORD ret;
-
-	QString str = ui.leSend->text();
-	//QByteArray ba = str.toLocal8Bit();		
 	QByteArray ba;
-	while (str.size()>3){//0x01 0x02 0xFF
+	while (aStr.size() > 3){//0x01 0x02 0xFF
 		bool res;
-		QString ts = str.left(5);
-		str.remove(0, 5);
+		QString ts = aStr.left(5);
+		aStr.remove(0, 5);
 		ts.remove(0, 2);
 		unsigned char cc = ts.toInt(&res, 16);
 		if (!res)
 			break;
 		ba+=cc;
 	}
+	return ba;
+}
+
+void FTDIDeviceControl::slSend()
+{
+	FT_STATUS ftStatus = FT_OK;
+	DWORD ret;
+
+	QString str = ui.leSend->text();
+	QByteArray ba = hexStringToByteArray(str);
+	//QByteArray ba = str.toLocal8Bit();		
 
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
@@ -245,7 +255,9 @@ void FTDIDeviceControl::slSend()
 
 void FTDIDeviceControl::addDataToTE(const QString& str)
 {
-	ui.teReceive->append(str);
+	ui.teReceive->moveCursor (QTextCursor::End);
+	ui.teReceive->insertPlainText (str);
+//	ui.teReceive->append(str);
 	QApplication::processEvents();
 }
 
@@ -318,7 +330,7 @@ int FTDIDeviceControl::waitForPacket(int& tt )
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){
-			tt=16*i;
+			tt = 16*i;
 			return 0;
 		}
 	}

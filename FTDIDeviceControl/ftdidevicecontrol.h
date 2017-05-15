@@ -73,6 +73,7 @@ private:
 	void openPort(int aNum);
 	void closePort();
 	int waitForPacket(int& tt);
+	QByteArray hexStringToByteArray(QString& aStr);
 
 private slots:
 	void slSend();
