@@ -1,5 +1,6 @@
 #include "ftdidevicecontrol.h"
 #include <QMessageBox>
+#include <QFileDialog>
 
 CDecoder::CDecoder()
 {
@@ -125,6 +126,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbClose, SIGNAL(clicked()),SLOT(slClose()));
 	connect(ui.pbGetInfo, SIGNAL(clicked()),SLOT(slGetInfo()));
 	connect(ui.pbClear, SIGNAL(clicked()),ui.teReceive ,SLOT(clear()));
+	connect(ui.pbBrowseRBF,SIGNAL(clicked()),SLOT(slBrowseRBF()));
+	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
 
 	FT_STATUS ftStatus = FT_OK;
 	unsigned numDevs=0;
@@ -335,4 +338,15 @@ int FTDIDeviceControl::waitForPacket(int& tt )
 		}
 	}
 	return 1;//need timeout;
+}
+
+void FTDIDeviceControl::slBrowseRBF()
+{
+	QString fileName = QFileDialog::getOpenFileName(this,"Open RBF","", tr("RBF Files (*.rbf)"));
+	ui.lePathToRBF->setText(fileName);
+}
+
+void FTDIDeviceControl::slWriteFlash()
+{
+
 }

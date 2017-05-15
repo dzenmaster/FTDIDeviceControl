@@ -82,6 +82,8 @@ private slots:
 	void slClose();
 	void slGetInfo();
 	void slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData);
+	void slBrowseRBF();
+	void slWriteFlash();
 };
 
 #endif // FTDIDEVICECONTROL_H
