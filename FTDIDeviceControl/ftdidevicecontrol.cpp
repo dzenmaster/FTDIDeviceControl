@@ -218,9 +218,16 @@ void FTDIDeviceControl::slSend()
 	QString str = ui.leSend->text();
 	//QByteArray ba = str.toLocal8Bit();		
 	QByteArray ba;
-	bool res;
-	unsigned char cc = str.toInt(&res, 16);
-	ba+=cc;
+	while (str.size()>3){//0x01 0x02 0xFF
+		bool res;
+		QString ts = str.left(5);
+		str.remove(0, 5);
+		ts.remove(0, 2);
+		unsigned char cc = ts.toInt(&res, 16);
+		if (!res)
+			break;
+		ba+=cc;
+	}
 
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
