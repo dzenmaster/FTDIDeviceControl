@@ -2,3 +2,5 @@
 *.log
 *.tlog
 *GeneratedFiles*
+*.ilk
+*.pdb
