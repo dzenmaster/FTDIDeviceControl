@@ -36,7 +36,7 @@ private slots:
 	void slOpen();
 	void slClose();
 	void slGetInfo();
-	void slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData);
+	void slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData);
 	void slBrowseRBF();
 	void slWriteFlash();
 };

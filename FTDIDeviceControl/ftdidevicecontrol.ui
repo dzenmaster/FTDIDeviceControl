@@ -187,6 +187,9 @@
         <string>Write Flash</string>
        </attribute>
        <widget class="QPushButton" name="pbWriteFlash">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>100</x>

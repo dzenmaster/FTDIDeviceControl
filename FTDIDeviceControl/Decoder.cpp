@@ -52,9 +52,9 @@ bool CDecoder::pushByte(unsigned char b)
 	return false;
 }
 
-unsigned char CDecoder::getID()
+unsigned char CDecoder::getType()
 {
-	return m_kadr[m_lastKadr][5];
+	return m_kadr[m_lastKadr][2];
 }
 
 unsigned short CDecoder::getLen()
@@ -64,5 +64,5 @@ unsigned short CDecoder::getLen()
 
 const unsigned char* CDecoder::getData()
 {
-	return &m_kadr[m_lastKadr][6];
+	return &m_kadr[m_lastKadr][5];
 }

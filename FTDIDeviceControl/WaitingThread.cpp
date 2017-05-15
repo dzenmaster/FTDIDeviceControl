@@ -32,7 +32,7 @@ void CWaitingThread::run()
 						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
 						if (m_dec.pushByte(b))
 						{//got full kadr
-							emit newKadr(m_dec.getID(),m_dec.getLen(),m_dec.getData());
+							emit newKadr(m_dec.getType(),m_dec.getLen(),m_dec.getData());
 							m_waitForPacket=false;
 						}
 					}

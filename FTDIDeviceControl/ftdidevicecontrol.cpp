@@ -172,6 +172,7 @@ void FTDIDeviceControl::slGetInfo()
 	DWORD ret;
 	char buff[] = {0xA5, 0x5A, 0x00, 0x01,0x00, 0x00 , 0x00}; // get module type
 
+	bool tResult = true;
 	for (unsigned char nc=0; nc < 4; ++nc){
 		buff[5] = nc; // get type sn firmware software
 
@@ -184,6 +185,7 @@ void FTDIDeviceControl::slGetInfo()
 		if (waitForPacket(tWTime)==1){
 			//QMessageBox::critical(this, "Wait timeout", "Wait timeout");
 			ui.teReceive->append("\nWait timeout\n");
+			tResult = false;
 		}
 		else{
 			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
@@ -191,32 +193,38 @@ void FTDIDeviceControl::slGetInfo()
 		QApplication::processEvents();
 
 	}
+	
+	ui.pbWriteFlash->setEnabled(tResult);
+	
 	QMessageBox::information(this,"ok","ok");
 }
 
-void FTDIDeviceControl::slNewKadr(unsigned char aID, unsigned short aLen, const unsigned char* aData)
+void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData)
 {
 	if ((!aData)||(!aLen))
 		return;
-	switch (aID){
+	if (aType==0) {
+		unsigned char tID = aData[0];
+		switch (tID) {
 		case 0:
-			ui.leModuleType->setText(QString("%1").arg(aData[0]));			
+			ui.leModuleType->setText(QString("%1").arg(aData[1]));			
 			break;
 		case 1:
-			ui.leSerialNumber->setText(QString("%1").arg(aData[0]));			
+			ui.leSerialNumber->setText(QString("%1").arg(aData[1]));			
 			break;
 		case 2:
-			ui.leFirmwareVersion->setText(QString("%1").arg(aData[0]));			
+			ui.leFirmwareVersion->setText(QString("%1").arg(aData[1]));			
 			break;
 		case 3:
-			ui.leSoftwareVersion->setText(QString("%1").arg(aData[0]));			
+			ui.leSoftwareVersion->setText(QString("%1").arg(aData[1]));			
 			break;
+		}
 	}
 }
 
 int FTDIDeviceControl::waitForPacket(int& tt )
 {
-	for(int i=0;i<500;++i)
+	for(int i = 0; i < 500; ++i)
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){

@@ -7,7 +7,7 @@ public:
 	CDecoder();
 	bool pushByte(unsigned char b); // return if full kadr
 	void reset();
-	unsigned char getID();
+	unsigned char getType();
 	unsigned short getLen();
 	const unsigned char* getData();
 
