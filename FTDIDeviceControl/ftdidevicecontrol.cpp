@@ -109,11 +109,11 @@ void FTDIDeviceControl::closePort()
 QByteArray FTDIDeviceControl::hexStringToByteArray(QString& aStr)
 {
 	QByteArray ba;
-	while (aStr.size() > 3){//0x01 0x02 0xFF
+	while (aStr.size() > 0){//0x01 0x02 0xFF
 		bool res;
-		QString ts = aStr.left(5);
-		aStr.remove(0, 5);
-		ts.remove(0, 2);
+		QString ts = aStr.left(3);
+		aStr.remove(0, 3);
+		//ts.remove(0, 2);
 		unsigned char cc = ts.toInt(&res, 16);
 		if (!res)
 			break;

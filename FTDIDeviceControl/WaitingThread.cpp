@@ -33,6 +33,7 @@ void CWaitingThread::run()
 						if (m_dec.pushByte(b))
 						{//got full kadr
 							emit newKadr(m_dec.getType(),m_dec.getLen(),m_dec.getData());
+							m_string+="\n";
 							m_waitForPacket=false;
 						}
 					}
