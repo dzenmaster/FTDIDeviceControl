@@ -6,7 +6,7 @@
 #include "WaitingThread.h"
 
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
-	: QMainWindow(parent), m_handle(0),m_waitingThread(0)
+	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1)
 {
 	ui.setupUi(this);
 	connect(ui.pbSend, SIGNAL(clicked()), SLOT(slSend()));
@@ -16,6 +16,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbClear, SIGNAL(clicked()), ui.teReceive, SLOT(clear()));
 	connect(ui.pbBrowseRBF, SIGNAL(clicked()), SLOT(slBrowseRBF()));
 	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
+	connect(ui.pbReadFlashID, SIGNAL(clicked()), SLOT(slReadFlashID()));
 
 	fillDeviceList();
 }
@@ -193,7 +194,7 @@ void FTDIDeviceControl::slGetInfo()
 		QApplication::processEvents();
 	}
 	
-	ui.pbWriteFlash->setEnabled(tResult);
+	ui.widget_3->setEnabled(tResult);
 	
 	QMessageBox::information(this,"ok","ok");
 }
@@ -219,15 +220,25 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 			break;
 		}
 	}
+	if (aType==3) {//read from SW
+		//0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
+		if ((aLen==7)&&(aData[0]==1)) {
+			unsigned short swAddr =  ((unsigned short)aData[1]) + ((unsigned short)aData[2])*256;
+			if (swAddr==0){ // Flash ID
+				m_flashID =  *((quint32*)&aData[3]);
+				ui.leFlashID->setText(QString("%1").arg(swAddr));
+			}
+		}
+	}
 }
 
 int FTDIDeviceControl::waitForPacket(int& tt )
 {
-	for(int i = 0; i < 500; ++i)
+	for(;;)//(int i = 0; i < 500; ++i)
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){
-			tt = 16*i;
+			tt = 0;//16*i;
 			return 0;
 		}
 	}
@@ -243,4 +254,36 @@ void FTDIDeviceControl::slBrowseRBF()
 void FTDIDeviceControl::slWriteFlash()
 {
 
+}
+
+void FTDIDeviceControl::slReadFlashID()
+{
+	// a5 5a 03 03 00 01 00 00
+
+//	 0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
+
+	if(m_handle == NULL) {
+		QMessageBox::critical(this,"closed","need to open device");
+		return;
+	}
+	FT_STATUS ftStatus = FT_OK;
+	DWORD ret;
+	char buff[] = { 0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x00, 0x00 }; // get flash ID
+
+	bool tResult = true;
+	m_waitingThread->setWaitForPacket();
+	ftStatus = FT_Write(m_handle, buff, 8, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	int tWTime=0;
+	if (waitForPacket(tWTime)==1){
+		//QMessageBox::critical(this, "Wait timeout", "Wait timeout");
+		ui.teReceive->append("\nWait timeout\n");
+		tResult = false;
+	}
+	else{
+		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+	}
+	QApplication::processEvents();
 }

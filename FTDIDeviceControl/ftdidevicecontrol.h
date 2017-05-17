@@ -22,7 +22,8 @@ private:
 	FT_HANDLE m_handle;
 	HANDLE m_hEvent;
 	CWaitingThread* m_waitingThread; 
-	
+	quint32 m_flashID;
+
 
 	void openPort(int aNum);
 	void closePort();
@@ -39,6 +40,7 @@ private slots:
 	void slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData);
 	void slBrowseRBF();
 	void slWriteFlash();
+	void slReadFlashID();
 };
 
 #endif // FTDIDEVICECONTROL_H
