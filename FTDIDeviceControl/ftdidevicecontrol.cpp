@@ -235,11 +235,11 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 
 int FTDIDeviceControl::waitForPacket(int& tt )
 {
-	for(;;)//(int i = 0; i < 500; ++i)
+	for(int i = 0; i < 500; ++i)
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){
-			tt = 0;//16*i;
+			tt = 16*i;
 			return 0;
 		}
 	}
@@ -288,6 +288,11 @@ void FTDIDeviceControl::slReadFlashID()
 
 void FTDIDeviceControl::slEraseFlash()
 {
+	if (m_flashID != 0x16)
+	{
+		ui.teReceive->append("\nIncorrect id\n");
+		return;
+	}
 	// a5 5a 03 03 00 01 00 00
 
 	//	 0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
