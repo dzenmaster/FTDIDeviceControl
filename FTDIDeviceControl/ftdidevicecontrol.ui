@@ -259,7 +259,7 @@
          </property>
          <property name="geometry">
           <rect>
-           <x>220</x>
+           <x>130</x>
            <y>10</y>
            <width>75</width>
            <height>23</height>
@@ -280,19 +280,6 @@
          </property>
          <property name="text">
           <string>read Flash ID</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pbEraseFlash">
-         <property name="geometry">
-          <rect>
-           <x>130</x>
-           <y>10</y>
-           <width>75</width>
-           <height>23</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Erase Flash</string>
          </property>
         </widget>
        </widget>

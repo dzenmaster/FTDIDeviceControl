@@ -41,7 +41,6 @@ private slots:
 	void slBrowseRBF();
 	void slWriteFlash();
 	void slReadFlashID();
-	void slEraseFlash();
 };
 
 #endif // FTDIDEVICECONTROL_H
