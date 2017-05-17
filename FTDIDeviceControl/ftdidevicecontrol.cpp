@@ -227,8 +227,9 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 		if ((aLen==7)&&(aData[0]==1)) {
 			unsigned short swAddr =  ((unsigned short)aData[1]) + ((unsigned short)aData[2])*256;
 			if (swAddr==0){ // Flash ID
-				m_flashID =  *((quint32*)&aData[3]);
-				ui.leFlashID->setText(QString("%1").arg(m_flashID));
+				m_flashID =  *((quint32*)&aData[3]);				
+				ui.leFlashID->setText(QString("%1").arg(swAddr));
+				//ui.leFlashID->setText(QString("%1").arg(m_flashID));
 			}
 		}
 	}
@@ -281,6 +282,7 @@ void FTDIDeviceControl::slReadFlashID()
 	int tWTime=0;
 	if (waitForPacket(tWTime)==1) {		
 		ui.teReceive->append("\nWait timeout\n");	
+		tResult = false;
 	}
 	else{
 		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
