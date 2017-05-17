@@ -50,6 +50,6 @@ void process_info_packet(void);
 void process_CurState_packet(alt_u8 state);
 void send_response_packet(alt_u8 state);
 alt_u8 process_SW_registers(void);
-void process_epcs_flash(alt_u8 FW_DATAn);
+void process_epcs_flash(alt_u8 state);
 
 

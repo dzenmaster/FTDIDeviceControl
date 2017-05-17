@@ -140,4 +140,36 @@ void UartCmd_Send_SW_reg_val(alt_u16 addr,alt_u32 reg_val)
 
 }
 
+///
+
+void UartCmd_Send_Stream(alt_u8* data,alt_u16 len)
+{
+	alt_u8  uart_status = 0;
+	alt_u16 tx_bytes = 0;
+
+	tx_bytes = len;
+
+	//wait for free space for sync words in FIFO
+	while ((UartCmd_FIFO_TX_USEDW_RD()) > 1000);
+
+	UartCmd_Sync_Bytes();
+
+	// Package type "Stream data"
+	UartCmd_WRITE_FIFO_TX_DATA(PKG_TYPE_SREAM_DATA);
+	// Lengths of packet
+	UartCmd_WRITE_FIFO_TX_DATA(len);
+	UartCmd_WRITE_FIFO_TX_DATA(len >> 8);
+
+	while (tx_bytes > 0)
+	{
+		uart_status = UartCmd_GET_STATUS();
+		if((uart_status & 0x8)>>3 == 0); // fifo is not full
+		{
+			UartCmd_WRITE_FIFO_TX_DATA(*data);
+			data++;
+			tx_bytes--;
+		}
+	}
+}
+
 

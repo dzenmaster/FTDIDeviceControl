@@ -9,7 +9,7 @@
 #define OK 0
 #define ERR_WR 1
 
-extern alt_u8 g_STATE_EPCS_UPD_FW;
+extern alt_u8 g_EPCS_STATE;
 
 static const unsigned char BitReverseTable256[] =
 {
@@ -31,7 +31,14 @@ static const unsigned char BitReverseTable256[] =
   0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
 
-// EPCS addresses
+// EPCS STATES
+enum {
+	EPCS_STATE_IDLE 	= 0x0,
+	EPCS_STATE_WRITE_FW = 0x1,
+	EPCS_STATE_READ_FW  = 0x2
+};
+
+// EPCS RG addresses
 enum {
  EPCS_ID_ADDR 			 = 0x0,
  EPCS_START_ADDRESS_ADDR = 0x1,
@@ -45,7 +52,8 @@ enum {
 	EPCS_CMD_WRITE				= 0x1,
 	EPCS_CMD_READ				= 0x2,
 	EPCS_CMD_ERASE_SECTOR		= 0x3,
-	EPCS_CMD_UPDATE_FIRMWARE	= 0x4
+	EPCS_CMD_UPDATE_FIRMWARE	= 0x4,
+	EPCS_CMD_READ_FIRMWARE		= 0x5
 };
 
 #pragma pack(push, 1) //packet struct
@@ -59,7 +67,8 @@ typedef struct
 
 typedef epcs_reg_t  *epcs_reg_xp;
 
-void epcs_commands(epcs_reg_t *epcs_area);
+alt_u8 epcs_commands(epcs_reg_t *epcs_area);
 void epcs_read_flash_id(void);
 alt_u8 epcs_run_cmd(void);
 void epcs_write_fw(alt_u8*  src_data,alt_u16 len);
+alt_u32 epcs_read_fw(alt_u8*  src_data);

@@ -1,0 +1,18 @@
+a5 5a 03 07 00 00 01 00 00 00 00 00 -- set start epcs addr 0
+
+a5 5a 03 07 00 00 03 00 03 00 00 00 -- erase sector 0
+
+a5 5a 03 07 00 00 02 00 09 00 00 00 -- write length
+
+a5 5a 03 07 00 00 03 00 04 00 00 00 -- cmd udp fw
+
+a5 5a 04 09 00 09 08 07 05 04 03 02 01 00-- write 9 bytes
+
+
+///// REad
+a5 5a 03 03 00 01 00 00  -- read EPCS ID
+
+a5 5a 03 07 00 00 01 00 00 00 00 00 -- set start epcs addr 0
+a5 5a 03 07 00 00 02 00 09 00 00 00 -- read length
+
+a5 5a 03 07 00 00 03 00 05 00 00 00 -- cmd read fw

@@ -39,3 +39,4 @@ void UartCmd_Send_SN(alt_u8 data);
 void UartCmd_Send_FirmWare_revision(alt_u8 data);
 void UartCmd_Send_SoftWare_revision(alt_u8 data);
 void UartCmd_Send_SW_reg_val(alt_u16 addr,alt_u32 reg_val);
+void UartCmd_Send_Stream(alt_u8* data,alt_u16 len);

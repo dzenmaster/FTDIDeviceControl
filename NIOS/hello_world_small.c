@@ -135,10 +135,17 @@ int main()
 	 switch (pkg_type)
 	 {
 	 	 case 0x0 : process_info_packet();		 	 break;
+
 	 	 case 0x1 :	process_CurState_packet(0x0); 	 break;
+
 	 	 case 0x3 : process_SW_registers();	 break;
-	 	 case 0x4 : if(g_STATE_EPCS_UPD_FW == 1)
-	 		 	 	 	 process_epcs_flash(0x1);
+
+	 	 case 0x4 : if(g_EPCS_STATE == EPCS_STATE_WRITE_FW)
+	 		 	 	 	 process_epcs_flash(g_EPCS_STATE); // firmware area
+	 	 	 	 	 else
+					 {
+						 // here EPCS write parameters data
+					 }
 	 		 	 	break;
 	 	default:
 	 	{
@@ -147,9 +154,10 @@ int main()
 	 	}
 	 }
 
-
-
-
+	 if(g_EPCS_STATE == EPCS_STATE_READ_FW)
+		 {
+			 process_epcs_flash(g_EPCS_STATE); // firmware area
+		 }
   }
 
 

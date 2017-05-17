@@ -4,6 +4,7 @@
 #include "system.h"
 #include "uart_cmd.h"
 #include "uart_cmd_pkg_process.h"
+#include "epcs_flash.h"
 
 ///
 
@@ -84,15 +85,30 @@ alt_u8 process_SW_registers(void)
 
 ///
 
-void process_epcs_flash(alt_u8 FW_DATAn)
+void process_epcs_flash(alt_u8 sate)
 {
 		alt_u8  buf[1024];
-		alt_u16 len;
-		len = UartCmd_get_data(&buf);
-		if(FW_DATAn == 1)
+		alt_u32 len;
+
+		len = 0;
+
+		if(sate == EPCS_STATE_WRITE_FW)
 		{
+			len = UartCmd_get_data(&buf);
 			epcs_write_fw(&buf,len);
 			send_response_packet(NIOS_CMD_OK);
+		}
+		else if(sate == EPCS_STATE_READ_FW)
+		{
+			do
+			{
+				len=epcs_read_fw(&buf);
+				if(len == 0)
+					send_response_packet(NIOS_CMD_WRONG_COMMAND);
+				else
+					UartCmd_Send_Stream(buf,len);
+			}
+			while(len == 1024);
 		}
 
 }
