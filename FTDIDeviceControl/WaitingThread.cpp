@@ -36,13 +36,14 @@ void CWaitingThread::run()
 							m_string+="\n";
 							m_waitForPacket=false;
 						}
-					}
+					}					
 					status = FT_GetQueueStatus(m_handle, &dwRead);
 				}
 				if (m_string.size())
 					emit newData(m_string);
 			}
 		}
+		Sleep(16);
 	}//for(;;)
 }
 

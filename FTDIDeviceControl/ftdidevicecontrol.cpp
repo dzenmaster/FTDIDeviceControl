@@ -2,6 +2,7 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
 
 #include "WaitingThread.h"
 
@@ -17,7 +18,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbBrowseRBF, SIGNAL(clicked()), SLOT(slBrowseRBF()));
 	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
 	connect(ui.pbReadFlashID, SIGNAL(clicked()), SLOT(slReadFlashID()));
-//	connect(ui.pbEraseFlash, SIGNAL(clicked()), SLOT(slEraseFlash()));
+	connect(ui.pbEraseFlash, SIGNAL(clicked()), SLOT(slEraseFlash()));
+	connect(ui.pbWriteLength, SIGNAL(clicked()), SLOT(slWriteLength()));
 
 	fillDeviceList();
 }
@@ -82,16 +84,17 @@ void FTDIDeviceControl::openPort(int aNum)
 		QMessageBox::critical(this, "FT_SetDataCharacteristics error", "FT_SetDataCharacteristics error");
 		return;
 	}
-//	ui.teReceive->append("\nOpened Successfull\n");
+	ui.teReceive->append("Opened succesful\n");
 	m_waitingThread = new CWaitingThread(m_handle, m_hEvent);
 	connect(m_waitingThread,SIGNAL(newData(const QString& )), SLOT(addDataToTE(const QString& )));
 	connect(m_waitingThread,SIGNAL(newKadr(unsigned char, unsigned short, const unsigned char*)), SLOT(slNewKadr(unsigned char, unsigned short, const unsigned char*)));
+	
 	m_waitingThread->start();
 }
 
 void FTDIDeviceControl::closePort()
 {
-	if (m_waitingThread){
+	if (m_waitingThread) {
 		m_waitingThread->disconnect();
 		m_waitingThread->m_stop=true;
 		Sleep(200);
@@ -150,7 +153,6 @@ void FTDIDeviceControl::addDataToTE(const QString& str)
 {
 	ui.teReceive->moveCursor (QTextCursor::End);
 	ui.teReceive->insertPlainText (str);
-//	ui.teReceive->append(str);
 	QApplication::processEvents();
 }
 
@@ -227,9 +229,8 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 		if ((aLen==7)&&(aData[0]==1)) {
 			unsigned short swAddr =  ((unsigned short)aData[1]) + ((unsigned short)aData[2])*256;
 			if (swAddr==0){ // Flash ID
-				m_flashID =  *((quint32*)&aData[3]);				
-				ui.leFlashID->setText(QString("%1").arg(swAddr));
-				//ui.leFlashID->setText(QString("%1").arg(m_flashID));
+				m_flashID =  *((quint32*)&aData[3]);
+				ui.leFlashID->setText(QString("%1").arg(m_flashID));
 			}
 		}
 	}
@@ -252,6 +253,10 @@ void FTDIDeviceControl::slBrowseRBF()
 {
 	QString fileName = QFileDialog::getOpenFileName(this,"Open RBF","", tr("RBF Files (*.rbf)"));
 	ui.lePathToRBF->setText(fileName);
+	if (QFile::exists(fileName)) {
+		QFileInfo fi(fileName);
+		ui.lSize->setText(QString("Size %1").arg(fi.size()));
+	}
 }
 
 void FTDIDeviceControl::slWriteFlash()
@@ -261,10 +266,6 @@ void FTDIDeviceControl::slWriteFlash()
 
 void FTDIDeviceControl::slReadFlashID()
 {
-	// a5 5a 03 03 00 01 00 00
-
-//	 0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
-
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
 		return;
@@ -272,8 +273,7 @@ void FTDIDeviceControl::slReadFlashID()
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;
 	char buff[] = { 0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x00, 0x00 }; // get flash ID
-
-	bool tResult = true;
+		
 	m_waitingThread->setWaitForPacket();
 	ftStatus = FT_Write(m_handle, buff, 8, &ret);
 	if (ftStatus!=FT_OK) {
@@ -282,7 +282,6 @@ void FTDIDeviceControl::slReadFlashID()
 	int tWTime=0;
 	if (waitForPacket(tWTime)==1) {		
 		ui.teReceive->append("\nWait timeout\n");	
-		tResult = false;
 	}
 	else{
 		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
@@ -292,21 +291,32 @@ void FTDIDeviceControl::slReadFlashID()
 
 void FTDIDeviceControl::slEraseFlash()
 {
-/*	if (m_flashID != 0x16)
-	{
-		ui.teReceive->append("\nIncorrect id\n");
-		return;
-	}
 	// a5 5a 03 03 00 01 00 00
 
 	//	 0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
 
 
+/*	a5 5a 03 |07 00|00|01 00|00 00 00 00| -- set start epcs addr sector 0 
+		| LEN |wr|RgAdr|data	    |	
 
+		ответ от модул€  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS						
+
+		2.2 «аписать команду 0x3 (erase sector) -> addr = 0x3
+		a5 5a 03 |07 00|00|03 00|03 00 00 00| -- erase sector (адрес сектора устанолен в п.2.1)
+		| LEN |wr|RgAdr|data	    |
+
+		ответ от модул€  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS		 
+
+		2.3 проделать данную операцию дл€ остальных секторов sector 1 = 1*0x010000; sector 2 = 2*0x010000; sector 12 = 12*0x010000 (см п.2.1)
+*/
 
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
 		return;
+	}
+	if (m_flashID!=0x16){
+		QMessageBox::critical(this,"wrong flash ID","wrong flash ID");
+		return;	
 	}
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;	
@@ -339,5 +349,46 @@ void FTDIDeviceControl::slEraseFlash()
 			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
 		}
 	}
-	QApplication::processEvents();*/
+	QApplication::processEvents();
+}
+
+void FTDIDeviceControl::slWriteLength()
+{
+	//3. «аписать полную длину файла (дл€ текущего 827854 байт) -> addr=0x2 
+	//	a5 5a 03 |07 00|00|02 00|CE A1 0— 00| -- write file length (в процессе записи этот регистр будет уменьшатьс€ на кол-во записаных байт)
+	//	         | LEN |wr|RgAdr|data	    |  
+
+	//	ответ от модул€  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS	
+	if(m_handle == NULL) {
+		QMessageBox::critical(this, "closed", "need to open device");
+		return;
+	}
+	if (m_flashID!=0x16){
+		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
+		return;	
+	}
+	FT_STATUS ftStatus = FT_OK;
+	DWORD ret;
+	char buff[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x02, 0x00, 0x00,0x00,0x00,0x00 }; // get flash ID
+	quint32 sz = 0;
+	QString fileName = ui.lePathToRBF->text();
+	if (QFile::exists(fileName)) {
+		QFileInfo fi(fileName);
+		sz = fi.size();
+	}
+	memcpy(&buff[8], &sz, 4); 
+
+	m_waitingThread->setWaitForPacket();
+	ftStatus = FT_Write(m_handle, buff, 12, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	int tWTime=0;
+	if (waitForPacket(tWTime)==1) {		
+		ui.teReceive->append("\nWait timeout\n");	
+	}
+	else{
+		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+	}
+	QApplication::processEvents();
 }

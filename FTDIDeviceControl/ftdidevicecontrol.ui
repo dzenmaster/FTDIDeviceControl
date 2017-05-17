@@ -243,7 +243,7 @@
        </widget>
        <widget class="QWidget" name="widget_3" native="true">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="geometry">
          <rect>
@@ -255,11 +255,11 @@
         </property>
         <widget class="QPushButton" name="pbWriteFlash">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="geometry">
           <rect>
-           <x>220</x>
+           <x>430</x>
            <y>10</y>
            <width>75</width>
            <height>23</height>
@@ -279,7 +279,7 @@
           </rect>
          </property>
          <property name="text">
-          <string>read Flash ID</string>
+          <string>Read Flash ID</string>
          </property>
         </widget>
         <widget class="QPushButton" name="pbEraseFlash">
@@ -293,6 +293,19 @@
          </property>
          <property name="text">
           <string>Erase Flash</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="pbWriteLength">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>10</y>
+           <width>75</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Write Len</string>
          </property>
         </widget>
        </widget>
@@ -320,6 +333,19 @@
         </property>
         <property name="readOnly">
          <bool>true</bool>
+        </property>
+       </widget>
+       <widget class="QLabel" name="lSize">
+        <property name="geometry">
+         <rect>
+          <x>280</x>
+          <y>60</y>
+          <width>46</width>
+          <height>13</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>size</string>
         </property>
        </widget>
       </widget>
