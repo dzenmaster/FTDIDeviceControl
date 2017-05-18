@@ -34,26 +34,28 @@ alt_u8 epcs_commands(epcs_reg_t *epcs_area)
 											  break;
 			case EPCS_COMMANDS_ADDR    		: UartCmd_Send_SW_reg_val(EPCS_COMMANDS_ADDR,epcs_cmd_rg);
 											  break;
+			default : 	return(EPCS_ERR);
 		}
 	}
 	else
 	{
 		switch (epcs_area->addr)
 		{
-			case EPCS_ID_ADDR 				: return(ERR_WR);//send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR); // only read register
+			case EPCS_ID_ADDR 				: return(EPCS_ERR);//send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR); // only read register
 											  break;
 			case EPCS_START_ADDRESS_ADDR	: epcs_start_address_rg = epcs_area->data; alt_putstr("EPCS_SET_START_ADDR\n");
 											  break;
 			case EPCS_TOTAL_LENTH_ADDR		: epcs_total_lenth_rg = epcs_area->data;alt_putstr("EPCS_SET_LENGTH\n");
 											  break;
-			case EPCS_COMMANDS_ADDR    		: epcs_cmd_rg = epcs_area->data; alt_putstr("EPCS_SET_CMD\n");
+			case EPCS_COMMANDS_ADDR    		: epcs_cmd_rg = epcs_area->data; alt_putstr("EPCS_SET_CMD -> ");
 											  epcs_run_cmd();
 											  break;
+			default : 	return(EPCS_ERR);
 		}
 
 	}
 
-	return(OK);
+	return(EPCS_OK);
 }
 
 ///
@@ -155,7 +157,7 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 {
 	alt_u8  rd_buf[1024];
 	int i =0;
-	alt_u16 len;
+	alt_u16 last_len;
 
 
 
@@ -173,10 +175,16 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 		}
 		epcs_start_address_rg +=1024;
 		epcs_total_lenth_rg -= 1024;
-		alt_putstr("EPCS_READ_DATA\n");
+		//alt_putstr("EPCS_READ_DATA\n");
+
+		if(epcs_total_lenth_rg == 0)
+		{
+			epcs_cmd_rg = EPCS_CMD_NULL;
+			g_EPCS_STATE = EPCS_STATE_IDLE;
+		}
 		return(1024);
 	}
-	else if(len > 0)
+	else if(epcs_total_lenth_rg > 0)
 	{
 		epcs_read_buffer(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
 				epcs_start_address_rg,
@@ -189,13 +197,13 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 					*src_data = BitReverseTable256[rd_buf[i]];
 					src_data++;
 				}
-				len = epcs_total_lenth_rg;
-				epcs_start_address_rg+=len;
+				last_len = epcs_total_lenth_rg;
+				epcs_start_address_rg+=last_len;
 				epcs_total_lenth_rg = 0;
 				epcs_cmd_rg = EPCS_CMD_NULL;
 				g_EPCS_STATE = EPCS_STATE_IDLE;
 				alt_putstr("EPCS_READ_DATA\n");
-				return(len);
+				return(last_len);
 	}
 
 }

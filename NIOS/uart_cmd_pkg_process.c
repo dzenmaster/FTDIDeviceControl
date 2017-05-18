@@ -76,9 +76,9 @@ alt_u8 process_SW_registers(void)
 	if(sw_reg.addr >= 0 || sw_reg.addr <= 3)
 	{
 		res = epcs_commands(&sw_reg);
-		if(res != 0)
+		if(res != EPCS_OK)
 			send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR);
-		else if(sw_reg.f_RD_WRn == 0)
+		else if(sw_reg.f_RD_WRn == 0) // response requires only for write
 			send_response_packet(NIOS_CMD_OK);
 	}
 }

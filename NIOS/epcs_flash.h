@@ -6,8 +6,8 @@
  */
 #include "alt_types.h"
 
-#define OK 0
-#define ERR_WR 1
+#define EPCS_OK 0
+#define EPCS_ERR 1
 
 extern alt_u8 g_EPCS_STATE;
 

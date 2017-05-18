@@ -163,11 +163,15 @@ void UartCmd_Send_Stream(alt_u8* data,alt_u16 len)
 	while (tx_bytes > 0)
 	{
 		uart_status = UartCmd_GET_STATUS();
-		if((uart_status & 0x8)>>3 == 0); // fifo is not full
+		if((uart_status & 0x8)>>3 == 0) // fifo is not full
 		{
 			UartCmd_WRITE_FIFO_TX_DATA(*data);
 			data++;
 			tx_bytes--;
+		}
+		else
+		{
+			//alt_putstr("tx fifo full\n");
 		}
 	}
 }
