@@ -293,7 +293,7 @@ void FTDIDeviceControl::slWriteFlash()
 		return;	
 	}
 
-	setEnabled(false);
+	ui.tabWidget->setEnabled(false);
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;
 	char buff[2048];
@@ -304,7 +304,7 @@ void FTDIDeviceControl::slWriteFlash()
 	QFile f1(fileName);
 	if (!f1.open(QIODevice::ReadOnly))	{
 		QMessageBox::critical(this, "open err", "open err");
-		setEnabled(true);
+		ui.tabWidget->setEnabled(true);
 		m_mtx.unlock();
 		return;	
 	}
@@ -335,7 +335,7 @@ void FTDIDeviceControl::slWriteFlash()
 		}
 		if (nWasRead<1024)
 			break;
-		ui.progressBarRBF->setValue((wasRW*100)/szFile);
+		ui.progressBarRBF->setValue((wasRW*100)/szFile);	
 		QApplication::processEvents();	
 	}
 	f1.close();
@@ -347,7 +347,7 @@ void FTDIDeviceControl::slWriteFlash()
 	//		ответ от модуля a5 5a 03 |07 00|01|03 00| XX XX XX XX
 	//	| LEN |rd|RgAdr|data	    | 
 
-	setEnabled(true);
+	ui.tabWidget->setEnabled(true);
 	QApplication::processEvents();	
 	m_mtx.unlock();
 }
