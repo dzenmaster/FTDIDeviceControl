@@ -2,6 +2,7 @@
 #define FTDIDEVICECONTROL_H
 
 #include <QtWidgets/QMainWindow>
+#include <QMutex>
 
 #include "ui_ftdidevicecontrol.h"
 #include "ftd2xx.h"
@@ -23,6 +24,7 @@ private:
 	HANDLE m_hEvent;
 	CWaitingThread* m_waitingThread; 
 	quint32 m_flashID;
+	QMutex m_mtx;
 
 
 	void openPort(int aNum);

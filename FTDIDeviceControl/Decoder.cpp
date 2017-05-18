@@ -11,7 +11,6 @@ void CDecoder::reset()
 	m_curPos=0;
 	m_syncState = 0;
 	m_curPos = 0;
-
 }
 
 bool CDecoder::pushByte(unsigned char b)
@@ -39,7 +38,7 @@ bool CDecoder::pushByte(unsigned char b)
 	case 2:
 		m_kadr[m_curKadr][m_curPos] = b;
 		if (m_curPos==4)
-			m_length = getLen();		
+			m_length = ((unsigned short)m_kadr[m_curKadr][3]) + ((unsigned short)m_kadr[m_curKadr][4])*256;;		
 		m_curPos = ((m_curPos+1)&2047);
 		if ((m_curPos>5)&&(m_curPos>=m_length+5)) {
 			reset();

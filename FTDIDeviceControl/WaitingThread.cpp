@@ -4,6 +4,7 @@ CWaitingThread::CWaitingThread(FT_HANDLE aHandle, HANDLE ahEvent, QObject * pare
 	: QThread(parent),m_handle(aHandle), m_hEvent(ahEvent), m_stop(false)
 {
 	m_waitForPacket=false;
+	m_typeToWait = 0;
 }
 
 void CWaitingThread::run()
@@ -25,16 +26,21 @@ void CWaitingThread::run()
 					status = FT_Read(m_handle, &b, 1, &dwRXBytes);
 					if(status == FT_OK) {
 						m_string+=QString(" 0x%1").arg(b, 0, 16);
-						if ((b==0xA)||(b==0xD))
-						{
-							m_string+="\n";
-						}
+					//	if ((b==0xA)||(b==0xD))
+					//	{
+					//		m_string+="\n";
+					//	}
 						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
 						if (m_dec.pushByte(b))
 						{//got full kadr
-							emit newKadr(m_dec.getType(),m_dec.getLen(),m_dec.getData());
-							m_string+="\n";
-							m_waitForPacket=false;
+							unsigned char tType = m_dec.getType();
+							emit newKadr(tType, m_dec.getLen(), m_dec.getData());
+							if (tType==1)
+								m_string+=" <- error msg\n";
+							else
+								m_string+="\n";
+							if (m_typeToWait==tType)
+								m_waitForPacket=false;
 						}
 					}					
 					status = FT_GetQueueStatus(m_handle, &dwRead);

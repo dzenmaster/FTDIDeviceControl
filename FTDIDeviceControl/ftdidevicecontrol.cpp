@@ -169,8 +169,12 @@ void FTDIDeviceControl::slClose()
 
 void FTDIDeviceControl::slGetInfo()
 {
+	if (!m_mtx.tryLock())
+		return;
+
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
+		m_mtx.unlock();
 		return;
 	}
 	FT_STATUS ftStatus = FT_OK;
@@ -181,7 +185,7 @@ void FTDIDeviceControl::slGetInfo()
 	for (unsigned char nc=0; nc < 4; ++nc){
 		buff[5] = nc; // get type sn firmware software
 
-		m_waitingThread->setWaitForPacket();
+		m_waitingThread->setWaitForPacket(0x00);
 		ftStatus = FT_Write(m_handle, buff, 6, &ret);
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
@@ -189,20 +193,20 @@ void FTDIDeviceControl::slGetInfo()
 		int tWTime=0;
 		if (waitForPacket(tWTime)==1){
 			//QMessageBox::critical(this, "Wait timeout", "Wait timeout");
-			ui.teReceive->append("\nWait timeout\n");
+			ui.teReceive->append("Wait timeout\n");
 			tResult = false;
 		}
 		else{
-			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+			ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));
 		}
 		QApplication::processEvents();
 	}
 	
 	ui.widget_3->setEnabled(tResult);
 	
-	QMessageBox::information(this,"ok","ok");
+//	QMessageBox::information(this,"ok","ok");
+	m_mtx.unlock();
 }
-
 void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData)
 {
 	if ((!aData)||(!aLen))
@@ -224,6 +228,9 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 			break;
 		}
 	}
+	if (aType==1) {
+		//error
+	}
 	if (aType==3) {//read from SW
 		//0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
 		if ((aLen==7)&&(aData[0]==1)) {
@@ -238,11 +245,11 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 
 int FTDIDeviceControl::waitForPacket(int& tt )
 {
-	for(;;)//(int i = 0; i < 500; ++i)
+	for(int i = 0; i < 100; ++i)
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){
-			tt = 0;//16*i;
+			tt = 16*i;
 			return 0;
 		}
 	}
@@ -266,8 +273,12 @@ void FTDIDeviceControl::slWriteFlash()
 
 void FTDIDeviceControl::slReadFlashID()
 {
+	if (!m_mtx.tryLock())
+		return;
+
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
+		m_mtx.unlock();
 		return;
 	}
 	FT_STATUS ftStatus = FT_OK;
@@ -287,6 +298,7 @@ void FTDIDeviceControl::slReadFlashID()
 		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
 	}
 	QApplication::processEvents();
+	m_mtx.unlock();
 }
 
 void FTDIDeviceControl::slEraseFlash()
@@ -309,13 +321,17 @@ void FTDIDeviceControl::slEraseFlash()
 
 		2.3 проделать данную операцию дл€ остальных секторов sector 1 = 1*0x010000; sector 2 = 2*0x010000; sector 12 = 12*0x010000 (см п.2.1)
 */
+	if (!m_mtx.tryLock())
+		return;
 
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
+		m_mtx.unlock();
 		return;
 	}
 	if (m_flashID!=0x16){
 		QMessageBox::critical(this,"wrong flash ID","wrong flash ID");
+		m_mtx.unlock();
 		return;	
 	}
 	FT_STATUS ftStatus = FT_OK;
@@ -350,10 +366,13 @@ void FTDIDeviceControl::slEraseFlash()
 		}
 	}
 	QApplication::processEvents();
+	m_mtx.unlock();
 }
 
 void FTDIDeviceControl::slWriteLength()
 {
+	if (!m_mtx.tryLock())
+		return;
 	//3. «аписать полную длину файла (дл€ текущего 827854 байт) -> addr=0x2 
 	//	a5 5a 03 |07 00|00|02 00|CE A1 0— 00| -- write file length (в процессе записи этот регистр будет уменьшатьс€ на кол-во записаных байт)
 	//	         | LEN |wr|RgAdr|data	    |  
@@ -361,10 +380,12 @@ void FTDIDeviceControl::slWriteLength()
 	//	ответ от модул€  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS	
 	if(m_handle == NULL) {
 		QMessageBox::critical(this, "closed", "need to open device");
+		m_mtx.unlock();
 		return;
 	}
 	if (m_flashID!=0x16){
 		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
+		m_mtx.unlock();
 		return;	
 	}
 	FT_STATUS ftStatus = FT_OK;
@@ -391,4 +412,5 @@ void FTDIDeviceControl::slWriteLength()
 		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
 	}
 	QApplication::processEvents();
+	m_mtx.unlock();
 }

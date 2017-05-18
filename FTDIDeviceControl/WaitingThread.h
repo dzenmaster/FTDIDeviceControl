@@ -13,7 +13,8 @@ public:
 	CWaitingThread(FT_HANDLE aHandle,HANDLE ahEvent, QObject * parent = 0);
 	~CWaitingThread(){};
 	bool m_stop;
-	void setWaitForPacket(){m_waitForPacket=true;};
+	unsigned char m_typeToWait;
+	void setWaitForPacket(unsigned char typeToWait = 0){m_typeToWait=typeToWait; m_waitForPacket=true;};
 	bool getWaitForPacket(){return m_waitForPacket;};
 
 signals:
