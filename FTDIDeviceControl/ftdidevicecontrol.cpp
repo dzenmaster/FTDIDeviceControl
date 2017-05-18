@@ -319,8 +319,8 @@ void FTDIDeviceControl::slWriteFlash()
 		if (nWasRead < 1)
 			break;
 		wasRW+=nWasRead;
-		quint32 tLen = nWasRead;
-		memcpy(&buff[3],&tLen,4); 
+		quint16 tLen = nWasRead;
+		memcpy(&buff[3],&tLen,2); 
 		m_waitingThread->setWaitForPacket(0x01);
 		ftStatus = FT_Write(m_handle, buff, 1029, &ret);
 		if (ftStatus!=FT_OK) {
