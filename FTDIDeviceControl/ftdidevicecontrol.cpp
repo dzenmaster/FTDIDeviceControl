@@ -19,6 +19,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
 	connect(ui.pbReadFlashID, SIGNAL(clicked()), SLOT(slReadFlashID()));
 	connect(ui.pbEraseFlash, SIGNAL(clicked()), SLOT(slEraseFlash()));
+	connect(ui.pbUpdateFirmware, SIGNAL(clicked()), SLOT(slUpdateFirmware()));
 	connect(ui.pbWriteLength, SIGNAL(clicked()), SLOT(slWriteLength()));
 
 	fillDeviceList();
@@ -268,7 +269,87 @@ void FTDIDeviceControl::slBrowseRBF()
 
 void FTDIDeviceControl::slWriteFlash()
 {
+	if (!m_mtx.tryLock())
+		return;
+	//5. ƒалее просто посылать пакеты (type = 0x04) по 1024 байта(последний пакет будет меньшего размера); после каждого пакета должен приходить пакет OK. 
+	//	a5 5a 04 |00 04|00 00...........
+	//	| LEN |data.................. 
 
+	//ответ от модул€  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS	
+	if(m_handle == NULL) {
+		QMessageBox::critical(this, "closed", "need to open device");
+		m_mtx.unlock();
+		return;
+	}
+	if (m_flashID!=0x16){
+		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
+		m_mtx.unlock();
+		return;	
+	}
+	QString fileName = ui.lePathToRBF->text();
+	if (!QFile::exists(fileName)) {
+		QMessageBox::critical(this, "no file", "no file");
+		m_mtx.unlock();
+		return;	
+	}
+
+	setEnabled(false);
+	FT_STATUS ftStatus = FT_OK;
+	DWORD ret;
+	char buff[2048];
+
+	QFileInfo fi(fileName);
+	qint64 szFile = fi.size();
+
+	QFile f1(fileName);
+	if (!f1.open(QIODevice::ReadOnly))	{
+		QMessageBox::critical(this, "open err", "open err");
+		setEnabled(true);
+		m_mtx.unlock();
+		return;	
+	}
+	buff[0] = 0xA5;
+	buff[1] = 0x5A;
+	buff[2] = 0x04;
+
+	qint64 wasRW=0;
+	for(;;)	
+	{
+		qint64 nWasRead = f1.read(&buff[5], 1024);		
+		if (nWasRead < 1)
+			break;
+		wasRW+=nWasRead;
+		quint32 tLen = nWasRead;
+		memcpy(&buff[3],&tLen,4); 
+		m_waitingThread->setWaitForPacket(0x01);
+		ftStatus = FT_Write(m_handle, buff, 1029, &ret);
+		if (ftStatus!=FT_OK) {
+			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+		}
+		int tWTime=0;
+		if (waitForPacket(tWTime)==1) {		
+			ui.teReceive->append("\nWait timeout\n");	
+		}
+		else{
+			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+		}
+		if (nWasRead<1024)
+			break;
+		ui.progressBarRBF->setValue((wasRW*100)/szFile);
+		QApplication::processEvents();	
+	}
+	f1.close();
+	ui.progressBarRBF->setValue(100);
+	//check
+	//6. ѕрочитать регистр -> addr=0x3 должно изменитьс€ значениe с 0x4 на 0х0 (NULL)
+	//	a5 5a 03 |03 00|01|03 00| 
+	//	| LEN |rd|RgAdr|
+	//		ответ от модул€ a5 5a 03 |07 00|01|03 00| XX XX XX XX
+	//	| LEN |rd|RgAdr|data	    | 
+
+	setEnabled(true);
+	QApplication::processEvents();	
+	m_mtx.unlock();
 }
 
 void FTDIDeviceControl::slReadFlashID()
@@ -285,7 +366,7 @@ void FTDIDeviceControl::slReadFlashID()
 	DWORD ret;
 	char buff[] = { 0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x00, 0x00 }; // get flash ID
 		
-	m_waitingThread->setWaitForPacket();
+	m_waitingThread->setWaitForPacket(0x03);
 	ftStatus = FT_Write(m_handle, buff, 8, &ret);
 	if (ftStatus!=FT_OK) {
 		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
@@ -334,12 +415,13 @@ void FTDIDeviceControl::slEraseFlash()
 		m_mtx.unlock();
 		return;	
 	}
+	setEnabled(false);
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;	
-		
+
 	for (unsigned char i = 0; i < 13; ++i) {
 		char buff[] = {0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, i, 0x00 }; // set start epcs addr sector 0 
-		m_waitingThread->setWaitForPacket();
+		m_waitingThread->setWaitForPacket(0x01);
 		ftStatus = FT_Write(m_handle, buff, 12, &ret);
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
@@ -352,7 +434,7 @@ void FTDIDeviceControl::slEraseFlash()
 			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
 		}
 		char buff2[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00};
-		m_waitingThread->setWaitForPacket();
+		m_waitingThread->setWaitForPacket(0x01);
 		ftStatus = FT_Write(m_handle, buff2, 12, &ret);
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
@@ -364,8 +446,9 @@ void FTDIDeviceControl::slEraseFlash()
 		else{
 			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
 		}
-	}
-	QApplication::processEvents();
+		QApplication::processEvents();
+	}	
+	setEnabled(true);
 	m_mtx.unlock();
 }
 
@@ -390,7 +473,7 @@ void FTDIDeviceControl::slWriteLength()
 	}
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;
-	char buff[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x02, 0x00, 0x00,0x00,0x00,0x00 }; // get flash ID
+	char buff[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x02, 0x00, 0x00,0x00,0x00,0x00 }; 
 	quint32 sz = 0;
 	QString fileName = ui.lePathToRBF->text();
 	if (QFile::exists(fileName)) {
@@ -399,7 +482,46 @@ void FTDIDeviceControl::slWriteLength()
 	}
 	memcpy(&buff[8], &sz, 4); 
 
-	m_waitingThread->setWaitForPacket();
+	m_waitingThread->setWaitForPacket(0x01);
+	ftStatus = FT_Write(m_handle, buff, 12, &ret);
+	if (ftStatus!=FT_OK) {
+		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+	}
+	int tWTime=0;
+	if (waitForPacket(tWTime)==1) {		
+		ui.teReceive->append("\nWait timeout\n");	
+	}
+	else{
+		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+	}
+	QApplication::processEvents();
+	m_mtx.unlock();
+}
+
+void FTDIDeviceControl::slUpdateFirmware()
+{
+	if (!m_mtx.tryLock())
+		return;
+//	4. «аписать в регистр команду Update Firmware 0x4  -> addr=0x3 (ƒождатьс€ пакета OK)
+//		a5 5a 03 |07 00|00|03 00|04 00 00 00| 
+//		| LEN |wr|RgAdr|data	    | 
+
+//		ответ от модул€  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS
+	if(m_handle == NULL) {
+		QMessageBox::critical(this, "closed", "need to open device");
+		m_mtx.unlock();
+		return;
+	}
+	if (m_flashID!=0x16){
+		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
+		m_mtx.unlock();
+		return;	
+	}
+	FT_STATUS ftStatus = FT_OK;
+	DWORD ret;
+	char buff[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x04,0x00,0x00,0x00 };
+
+	m_waitingThread->setWaitForPacket(0x01);
 	ftStatus = FT_Write(m_handle, buff, 12, &ret);
 	if (ftStatus!=FT_OK) {
 		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			

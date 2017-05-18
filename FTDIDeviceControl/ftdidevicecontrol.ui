@@ -195,7 +195,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -396,6 +396,19 @@
           <string>Write Len</string>
          </property>
         </widget>
+        <widget class="QPushButton" name="pbUpdateFirmware">
+         <property name="geometry">
+          <rect>
+           <x>320</x>
+           <y>10</y>
+           <width>101</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>UpdateFirmware</string>
+         </property>
+        </widget>
        </widget>
        <widget class="QLabel" name="label_8">
         <property name="geometry">
@@ -428,8 +441,8 @@
          <rect>
           <x>280</x>
           <y>60</y>
-          <width>46</width>
-          <height>13</height>
+          <width>191</width>
+          <height>16</height>
          </rect>
         </property>
         <property name="text">

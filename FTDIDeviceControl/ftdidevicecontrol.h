@@ -45,6 +45,7 @@ private slots:
 	void slReadFlashID();
 	void slEraseFlash();
 	void slWriteLength();
+	void slUpdateFirmware();
 };
 
 #endif // FTDIDEVICECONTROL_H

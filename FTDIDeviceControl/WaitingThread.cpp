@@ -35,10 +35,17 @@ void CWaitingThread::run()
 						{//got full kadr
 							unsigned char tType = m_dec.getType();
 							emit newKadr(tType, m_dec.getLen(), m_dec.getData());
-							if (tType==1)
-								m_string+=" <- error msg\n";
-							else
+							if (tType==1){
+								if (b==0){
+									m_string+=" <- OK\n";
+								}
+								else{
+									m_string+=" <- error msg\n";
+								}
+							}
+							else{
 								m_string+="\n";
+							}
 							if (m_typeToWait==tType)
 								m_waitForPacket=false;
 						}
