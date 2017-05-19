@@ -56,6 +56,7 @@ void CWaitingThread::run()
 							}
 							if (m_typeToWait==tType)
 								m_waitForPacket=false;
+							//Sleep(100);
 							emit newKadr(tType, m_dec.getLen(), m_dec.getData());
 						}
 					}					

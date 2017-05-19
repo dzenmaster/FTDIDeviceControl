@@ -81,6 +81,7 @@ void FTDIDeviceControl::openPort(int aNum)
 		return;
 	}	
 	ftStatus = FT_SetBaudRate(m_handle, 115200);
+	//ftStatus = FT_SetBaudRate(m_handle, 57600);
 	if (ftStatus!=FT_OK){
 		QMessageBox::critical(this, "FT_SetBaudRate error", "FT_SetBaudRate error");
 		return;
@@ -329,14 +330,17 @@ void FTDIDeviceControl::slWriteFlash()
 	for(;;)	
 	{
 		qint64 nWasRead = f1.read(&buff[5], 1024);		
+		//qint64 nWasRead = f1.read(&buff[5], 128);		
 		if (nWasRead < 1)
 			break;
 		wasRW+=nWasRead;
 		quint16 tLen = nWasRead;
 		memcpy(&buff[3],&tLen,2); 
 		m_waitingThread->setWaitForPacket(0x01);	
-		Sleep(50);//костыль
+		Sleep(100);//костыль
 		ftStatus = FT_Write(m_handle, buff, 1029, &ret);
+		//ftStatus = FT_Write(m_handle, buff, 133, &ret);
+		//Sleep(200);//костыль
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
@@ -344,11 +348,11 @@ void FTDIDeviceControl::slWriteFlash()
 		int tCode=-1;
 		if (waitForPacket(tWTime, tCode)==1) {		
 			ui.teReceive->append("Wait timeout\n");
-			ui.teReceive->append(QString("write error %1 len=%2\n").arg(tCode).arg(nWasRead));
+			ui.teReceive->append(QString("write error %1 len=%2 %3 %4\n").arg(tCode).arg(nWasRead).arg(ret).arg(wasRW));
 			break;
 		}
 		else {
-			ui.teReceive->append(QString("good Wait %1ms len=%2\n").arg(tWTime).arg(nWasRead));
+			ui.teReceive->append(QString("good Wait %1ms len=%2 %3 %4\n").arg(tWTime).arg(nWasRead).arg(ret).arg(wasRW));
 			if (tCode!=0){
 				ui.teReceive->append(QString("write error %1\n").arg(tCode));				
 				break;
