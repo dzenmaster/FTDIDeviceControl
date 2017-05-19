@@ -8,6 +8,16 @@
 #include "ftd2xx.h"
 
 class CWaitingThread;
+class QFile;
+
+enum
+{
+	PKG_TYPE_INFO=0,
+	PKG_TYPE_ERRORMES=1,
+	PKG_TYPE_ASCIIMES=2,
+	PKG_TYPE_RWSW=3,
+	PKG_TYPE_RWPACKET=4
+};
 
 class FTDIDeviceControl : public QMainWindow
 {
@@ -25,6 +35,10 @@ private:
 	CWaitingThread* m_waitingThread; 
 	quint32 m_flashID;
 	QMutex m_mtx;
+	quint64 m_readBytes;
+	quint64 m_inputLength;
+	QFile* m_inputFile;
+	char m_buff[2048];
 
 
 	void openPort(int aNum);
@@ -32,6 +46,7 @@ private:
 	int waitForPacket(int& tt, int& aCode);
 	QByteArray hexStringToByteArray(QString& aStr);
 	void fillDeviceList();
+	int sendPacket(unsigned char aType, unsigned short aLen, char* data);
 
 private slots:
 	void slSend();
@@ -46,6 +61,7 @@ private slots:
 	void slEraseFlash();
 	void slWriteLength();
 	void slUpdateFirmware();
+	void slReadFlash();
 };
 
 #endif // FTDIDEVICECONTROL_H

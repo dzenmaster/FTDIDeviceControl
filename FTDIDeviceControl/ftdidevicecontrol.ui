@@ -161,6 +161,19 @@
             </property>
            </widget>
           </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
        </item>
@@ -354,7 +367,7 @@
           </rect>
          </property>
          <property name="text">
-          <string>write</string>
+          <string>Write</string>
          </property>
         </widget>
         <widget class="QPushButton" name="pbReadFlashID">
@@ -447,6 +460,19 @@
         </property>
         <property name="text">
          <string>size</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pbReadFlash">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>220</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>ReadFlash</string>
         </property>
        </widget>
       </widget>
