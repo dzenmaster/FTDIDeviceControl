@@ -14,8 +14,9 @@ public:
 	~CWaitingThread(){};
 	bool m_stop;
 	unsigned char m_typeToWait;
-	void setWaitForPacket(unsigned char typeToWait = 0){m_typeToWait=typeToWait; m_waitForPacket=true;};
-	bool getWaitForPacket(){return m_waitForPacket;};
+	void setWaitForPacket(unsigned char typeToWait = 0);// { if (m_typeToWait==1) m_errorCode = -1; m_typeToWait=typeToWait; m_waitForPacket=true;};
+	bool getWaitForPacket() { return m_waitForPacket; };	
+	int getErrorCode() { return m_errorCode;};
 
 signals:
 	void newData(const QString& );
@@ -30,6 +31,7 @@ private:
 	QString m_string;
 	CDecoder m_dec;
 	bool m_waitForPacket;
+	int m_errorCode;
 
 };
 #endif // FTDIDECODER_H

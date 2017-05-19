@@ -129,26 +129,7 @@ QByteArray FTDIDeviceControl::hexStringToByteArray(QString& aStr)
 	return ba;
 }
 
-void FTDIDeviceControl::slSend()
-{
-	FT_STATUS ftStatus = FT_OK;	
-	QString str = ui.leSend->text();
-	QByteArray ba = hexStringToByteArray(str);
-	//QByteArray ba = str.toLocal8Bit();		
 
-	if(m_handle == NULL) {
-		QMessageBox::critical(this,"closed","need to open device");
-		return;
-	}
-	else {
-		DWORD ret;
-		ftStatus = FT_Write(m_handle, ba.data(), ba.size(), &ret);	
-		if (ftStatus!=FT_OK) {
-			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
-		}
-	}
-
-}
 
 void FTDIDeviceControl::addDataToTE(const QString& str)
 {
@@ -192,7 +173,8 @@ void FTDIDeviceControl::slGetInfo()
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
 		int tWTime=0;
-		if (waitForPacket(tWTime)==1){
+		int tCode=0;
+		if (waitForPacket(tWTime, tCode)==1){
 			//QMessageBox::critical(this, "Wait timeout", "Wait timeout");
 			ui.teReceive->append("Wait timeout\n");
 			tResult = false;
@@ -244,17 +226,19 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 	}
 }
 
-int FTDIDeviceControl::waitForPacket(int& tt )
+int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 {
-	for(int i = 0; i < 100; ++i)
+	for(int i = 0; i < 500; ++i)
 	{
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){
 			tt = 16*i;
+			aCode = m_waitingThread->getErrorCode();
 			return 0;
 		}
 	}
-	return 1;//need timeout;
+	aCode = m_waitingThread->getErrorCode();
+	return 1; // timeout;
 }
 
 void FTDIDeviceControl::slBrowseRBF()
@@ -321,17 +305,25 @@ void FTDIDeviceControl::slWriteFlash()
 		wasRW+=nWasRead;
 		quint16 tLen = nWasRead;
 		memcpy(&buff[3],&tLen,2); 
-		m_waitingThread->setWaitForPacket(0x01);
+		m_waitingThread->setWaitForPacket(0x01);	
+		Sleep(16);
 		ftStatus = FT_Write(m_handle, buff, 1029, &ret);
 		if (ftStatus!=FT_OK) {
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
 		int tWTime=0;
-		if (waitForPacket(tWTime)==1) {		
-			ui.teReceive->append("\nWait timeout\n");	
+		int tCode=-1;
+		if (waitForPacket(tWTime, tCode)==1) {		
+			ui.teReceive->append("Wait timeout\n");
+			ui.teReceive->append(QString("write error %1\n").arg(tCode));
+			break;
 		}
-		else{
-			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+		else {
+			ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));
+			if (tCode!=0){
+				ui.teReceive->append(QString("write error %1\n").arg(tCode));
+				break;
+			}
 		}
 		if (nWasRead<1024)
 			break;
@@ -351,6 +343,29 @@ void FTDIDeviceControl::slWriteFlash()
 	QApplication::processEvents();	
 	m_mtx.unlock();
 }
+
+void FTDIDeviceControl::slSend()
+{
+	if (!m_mtx.tryLock())
+		return;
+	FT_STATUS ftStatus = FT_OK;	
+	QString str = ui.leSend->text();
+	QByteArray ba = hexStringToByteArray(str);
+	//QByteArray ba = str.toLocal8Bit();		
+
+	if(m_handle == NULL) {
+		QMessageBox::critical(this,"closed","need to open device");		
+	}
+	else {
+		DWORD ret;
+		ftStatus = FT_Write(m_handle, ba.data(), ba.size(), &ret);	
+		if (ftStatus!=FT_OK) {
+			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
+		}
+	}
+	m_mtx.unlock();
+}
+
 
 void FTDIDeviceControl::slReadFlashID()
 {
@@ -372,11 +387,13 @@ void FTDIDeviceControl::slReadFlashID()
 		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 	}
 	int tWTime=0;
-	if (waitForPacket(tWTime)==1) {		
-		ui.teReceive->append("\nWait timeout\n");	
+	int tCode=-1;
+	if (waitForPacket(tWTime, tCode)==1) {		
+		ui.teReceive->append("Wait timeout\n");
+		ui.teReceive->append(QString("read error %1\n").arg(tCode));
 	}
-	else{
-		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+	else {
+		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));	
 	}
 	QApplication::processEvents();
 	m_mtx.unlock();
@@ -427,12 +444,20 @@ void FTDIDeviceControl::slEraseFlash()
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
 		int tWTime=0;
-		if (waitForPacket(tWTime)==1){		
-			ui.teReceive->append("\nWait timeout\n");	
+		int tCode=-1;
+		if (waitForPacket(tWTime, tCode)==1) {		
+			ui.teReceive->append("Wait timeout\n");
+			ui.teReceive->append(QString("set start epcs error %1\n").arg(tCode));
+			break;
 		}
-		else{
-			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+		else {
+			ui.teReceive->append(QString("start epcs good Wait %1ms n=%2\n").arg(tWTime).arg(i));
+			if (tCode!=0) {
+				ui.teReceive->append(QString("set start epcs error %1\n").arg(tCode));
+				break;
+			}
 		}
+		Sleep(100);//костыль потом отладить
 		char buff2[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00};
 		m_waitingThread->setWaitForPacket(0x01);
 		ftStatus = FT_Write(m_handle, buff2, 12, &ret);
@@ -440,12 +465,20 @@ void FTDIDeviceControl::slEraseFlash()
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
 		tWTime=0;
-		if (waitForPacket(tWTime)==1){		
-			ui.teReceive->append("\nWait timeout\n");	
+		tCode=-1;
+		if (waitForPacket(tWTime, tCode)==1) {		
+			ui.teReceive->append("Wait timeout\n");
+			ui.teReceive->append(QString("erase error %1\n").arg(tCode));
+			break;
 		}
-		else{
-			ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+		else {
+			ui.teReceive->append(QString("erase sector good Wait %1ms n=%2\n").arg(tWTime).arg(i));
+			if (tCode!=0) {
+				ui.teReceive->append(QString("erase error %1\n").arg(tCode));
+				break;
+			}
 		}
+		Sleep(100);//костыль потом отладить
 		QApplication::processEvents();
 	}	
 	setEnabled(true);
@@ -488,11 +521,16 @@ void FTDIDeviceControl::slWriteLength()
 		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 	}
 	int tWTime=0;
-	if (waitForPacket(tWTime)==1) {		
-		ui.teReceive->append("\nWait timeout\n");	
+	int tCode=-1;
+	if (waitForPacket(tWTime, tCode)==1) {		
+		ui.teReceive->append("Wait timeout\n");
+		ui.teReceive->append(QString("write length error %1\n").arg(tCode));		
 	}
-	else{
-		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+	else {
+		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));
+		if (tCode!=0) {
+			ui.teReceive->append(QString("write length error %1\n").arg(tCode));		
+		}
 	}
 	QApplication::processEvents();
 	m_mtx.unlock();
@@ -527,11 +565,16 @@ void FTDIDeviceControl::slUpdateFirmware()
 		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 	}
 	int tWTime=0;
-	if (waitForPacket(tWTime)==1) {		
-		ui.teReceive->append("\nWait timeout\n");	
+	int tCode=-1;
+	if (waitForPacket(tWTime, tCode)==1) {		
+		ui.teReceive->append("Wait timeout\n");
+		ui.teReceive->append(QString("Update firmware error %1\n").arg(tCode));		
 	}
-	else{
-		ui.teReceive->append(QString("\ngood Wait %1ms\n").arg(tWTime));
+	else {
+		ui.teReceive->append(QString("good wait %1ms\n").arg(tWTime));
+		if (tCode!=0) {
+			ui.teReceive->append(QString("Update firmware error %1\n").arg(tCode));		
+		}
 	}
 	QApplication::processEvents();
 	m_mtx.unlock();

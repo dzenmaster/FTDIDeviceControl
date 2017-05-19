@@ -29,7 +29,7 @@ private:
 
 	void openPort(int aNum);
 	void closePort();
-	int waitForPacket(int& tt);
+	int waitForPacket(int& tt, int& aCode);
 	QByteArray hexStringToByteArray(QString& aStr);
 	void fillDeviceList();
 

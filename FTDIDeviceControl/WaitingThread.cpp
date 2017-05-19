@@ -5,6 +5,16 @@ CWaitingThread::CWaitingThread(FT_HANDLE aHandle, HANDLE ahEvent, QObject * pare
 {
 	m_waitForPacket=false;
 	m_typeToWait = 0;
+	m_errorCode = -1;
+}
+
+
+void CWaitingThread::setWaitForPacket(unsigned char typeToWait)
+{
+	if (m_typeToWait==1) 
+		m_errorCode = -1; 
+	m_typeToWait = typeToWait; 
+	m_waitForPacket = true;
 }
 
 void CWaitingThread::run()
@@ -33,21 +43,20 @@ void CWaitingThread::run()
 						//нужно делать ресет по таймауту, чтобы не зависло в случае сбоя
 						if (m_dec.pushByte(b))
 						{//got full kadr
-							unsigned char tType = m_dec.getType();
-							emit newKadr(tType, m_dec.getLen(), m_dec.getData());
-							if (tType==1){
-								if (b==0){
-									m_string+=" <- OK\n";
-								}
-								else{
-									m_string+=" <- error msg\n";
-								}
+							unsigned char tType = m_dec.getType();							
+							if (tType==1) {
+								if (b==0) 
+									m_string += " <- OK\n";
+								else
+									m_string += " <- error msg\n";
+								m_errorCode = b;
 							}
 							else{
 								m_string+="\n";
 							}
 							if (m_typeToWait==tType)
 								m_waitForPacket=false;
+							emit newKadr(tType, m_dec.getLen(), m_dec.getData());
 						}
 					}					
 					status = FT_GetQueueStatus(m_handle, &dwRead);
