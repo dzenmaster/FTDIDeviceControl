@@ -3,13 +3,18 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QSettings>
 
 #include "WaitingThread.h"
+
+QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),m_inputLength(0),m_readBytes(0),m_inputFile(0)
 {
 	ui.setupUi(this);
+	
+	setRbfFileName(g_Settings.value("rbfFileName", "").toString());
 
 	m_buff[0]=0xA5;
 	m_buff[1]=0x5A;
@@ -271,12 +276,19 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 }
 
 void FTDIDeviceControl::slBrowseRBF()
+{	
+	setRbfFileName(QFileDialog::getOpenFileName(this,"Open RBF","", "RBF Files (*.rbf)"));
+	
+}
+
+void FTDIDeviceControl::setRbfFileName(const QString& fn)
 {
-	QString fileName = QFileDialog::getOpenFileName(this,"Open RBF","", "RBF Files (*.rbf)");
-	ui.lePathToRBF->setText(fileName);
-	if (QFile::exists(fileName)) {
-		QFileInfo fi(fileName);
+	m_rbfFileName  = fn;
+		ui.lePathToRBF->setText(m_rbfFileName );
+	if (QFile::exists(m_rbfFileName )) {
+		QFileInfo fi(m_rbfFileName);
 		ui.lSize->setText(QString("Size %1").arg(fi.size()));
+		g_Settings.setValue("rbfFileName", m_rbfFileName);
 	}
 }
 
@@ -434,8 +446,12 @@ void FTDIDeviceControl::slReadFlashID()
 {
 	if (!m_mtx.tryLock())
 		return;
+	
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
 
-	if(m_handle == NULL) {
+/*	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
 		m_mtx.unlock();
 		return;
@@ -458,7 +474,7 @@ void FTDIDeviceControl::slReadFlashID()
 	else {
 		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));	
 	}
-	QApplication::processEvents();
+	QApplication::processEvents();*/
 	m_mtx.unlock();
 }
 
@@ -765,29 +781,59 @@ void FTDIDeviceControl::slReadFlash()
 }
 
 //common wrap
-int FTDIDeviceControl::sendPacket(unsigned char aType, unsigned short aLen, char* data)
+int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData)
 {
-	if ( (m_handle == NULL) ) {
-		QMessageBox::critical(this,"closed","need to open device");	
+	if ( (m_handle == NULL) ) {		
+		m_lastErrorStr = "need to open device";
 		return -1;
 	}
-	if ((aLen<1)||(aLen>2043)) {
-		QMessageBox::critical(this,"wrong par","wrong par");	
+	if ((aLen<1)||(aLen>2043)) {		
+		m_lastErrorStr = "wrong par";
 		return -1;
 	}
 	
-	FT_STATUS ftStatus = FT_OK;
-	DWORD ret;
 	m_buff[2] = aType;
+	quint32 fullLen = 0;
 	memcpy(&m_buff[3], &aLen, 2);
+	if (aType==PKG_TYPE_RWSW) { //regRead
+		m_buff[5] = aRdWr;
+		memcpy(&m_buff[6], &aAddr, 2);
+		if (aRdWr==REG_RD) {
+			fullLen = 8;
+		}
+		else{ // write
+			memcpy(&m_buff[8], &aData, 4);
+			fullLen = 12;
+		}
+	}
+	else{
+		return -1;
+	}
+	DWORD ret;
+	unsigned char typeToWait = PKG_TYPE_ERRORMES;
+	if (aType==PKG_TYPE_RWSW)
+		typeToWait=PKG_TYPE_RWSW;
+	m_waitingThread->setWaitForPacket(typeToWait);
 	
+	FT_STATUS ftStatus = FT_Write(m_handle, m_buff, fullLen, &ret);
 
-	/*char buff[] = { 0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x00, 0x00 }; // get flash ID
+	if (ftStatus!=FT_OK) {		
+		m_lastErrorStr = "FT_Write error";
+		return -1;
+	}
 
-	m_waitingThread->setWaitForPacket(0x03);
-	ftStatus = FT_Write(m_handle, buff, 8, &ret);
-	if (ftStatus!=FT_OK) {
-		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
-	}*/
+	int tWTime=0;
+	int tCode=-1;
+	if (waitForPacket(tWTime, tCode)==1) {		
+		m_lastErrorStr = "Wait timeout\n";
+		//ui.teReceive->append(QString("read error %1\n").arg(tCode));
+		return -1;
+	}
+	else {
+		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));	
+	}
+	QApplication::processEvents();
+
+
 	return 0;
 }

@@ -12,6 +12,12 @@ class QFile;
 
 enum
 {
+	REG_WR=0,
+	REG_RD=1
+};
+
+enum
+{
 	PKG_TYPE_INFO=0,
 	PKG_TYPE_ERRORMES=1,
 	PKG_TYPE_ASCIIMES=2,
@@ -38,7 +44,9 @@ private:
 	quint64 m_readBytes;
 	quint64 m_inputLength;
 	QFile* m_inputFile;
-	char m_buff[2048];
+	unsigned char m_buff[2048];
+	QString m_rbfFileName;
+	QString m_lastErrorStr;
 
 
 	void openPort(int aNum);
@@ -46,7 +54,8 @@ private:
 	int waitForPacket(int& tt, int& aCode);
 	QByteArray hexStringToByteArray(QString& aStr);
 	void fillDeviceList();
-	int sendPacket(unsigned char aType, unsigned short aLen, char* data);
+	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
+	void setRbfFileName(const QString&);
 
 private slots:
 	void slSend();
