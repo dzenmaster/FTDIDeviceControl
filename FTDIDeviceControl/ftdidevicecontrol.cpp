@@ -353,7 +353,7 @@ void FTDIDeviceControl::slWriteFlash()
 		memcpy(&buff[3],&tLen,2); 
 		m_waitingThread->setWaitForPacket(PKG_TYPE_ERRORMES);	
 		Sleep(100);//костыль
-		ftStatus = FT_Write(m_handle, buff, 1029, &ret);
+		ftStatus = FT_Write(m_handle, buff, nWasRead+5, &ret);
 		//ftStatus = FT_Write(m_handle, buff, 133, &ret);
 		//Sleep(200);//костыль
 		if (ftStatus!=FT_OK) {
