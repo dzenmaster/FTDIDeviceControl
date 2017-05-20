@@ -18,7 +18,7 @@ void process_info_packet(void)
 		case 1 : UartCmd_Send_SN(0x2);		    		break;
 		case 2 : UartCmd_Send_FirmWare_revision(0x3); 	break;
 		case 3 : UartCmd_Send_SoftWare_revision(0x4); 	break;
-		default :  alt_putstr("Unknown info parameter\n");
+//		default :  alt_putstr("Unknown info parameter\n");
 	}
 }
 
@@ -89,26 +89,37 @@ void process_epcs_flash(alt_u8 sate)
 {
 		alt_u8  buf[1024];
 		alt_u32 len;
+		alt_u8  res;
 
 		len = 0;
 
 		if(sate == EPCS_STATE_WRITE_FW)
 		{
 			len = UartCmd_get_data(&buf);
-			epcs_write_fw(&buf,len);
-			send_response_packet(NIOS_CMD_OK);
+			res = epcs_write_fw(&buf,len);
+			if(res == EPCS_OK)
+				send_response_packet(NIOS_CMD_OK);
+			else
+				send_response_packet(NIOS_CMD_EPCS_WRITE_ERR);
 		}
 		else if(sate == EPCS_STATE_READ_FW)
 		{
 			do
 			{
 				len=epcs_read_fw(&buf);
-				if(len == 0)
-					send_response_packet(NIOS_CMD_WRONG_COMMAND);
-				else
+				if(len != 0)
 					UartCmd_Send_Stream(buf,len);
+				else
+				{
+					send_response_packet(NIOS_CMD_EPCS_READ_ERR);
+					g_EPCS_STATE = EPCS_STATE_IDLE;
+				}
+
 			}
 			while(len == 1024);
+
+			if(len != 0)
+				send_response_packet(NIOS_CMD_OK);
 		}
 
 }

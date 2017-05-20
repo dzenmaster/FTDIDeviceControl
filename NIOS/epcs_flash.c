@@ -34,6 +34,9 @@ alt_u8 epcs_commands(epcs_reg_t *epcs_area)
 											  break;
 			case EPCS_COMMANDS_ADDR    		: UartCmd_Send_SW_reg_val(EPCS_COMMANDS_ADDR,epcs_cmd_rg);
 											  break;
+			case EPCS_APL_FROM_ADDR		: 	  UartCmd_Send_SW_reg_val(EPCS_APL_FROM_ADDR,EPCS_APL_BOOT_ADDR);
+											  break;
+
 			default : 	return(EPCS_ERR);
 		}
 	}
@@ -43,13 +46,30 @@ alt_u8 epcs_commands(epcs_reg_t *epcs_area)
 		{
 			case EPCS_ID_ADDR 				: return(EPCS_ERR);//send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR); // only read register
 											  break;
-			case EPCS_START_ADDRESS_ADDR	: epcs_start_address_rg = epcs_area->data; alt_putstr("EPCS_SET_START_ADDR\n");
+
+			case EPCS_START_ADDRESS_ADDR	:  if(epcs_area->data < EPCS_APL_BOOT_ADDR){
+													 dbg_printf("EPCS_START ADDR -> %x \n", epcs_area->data);
+													 dbg_printf("ERROR : Need to set ADDR from -> %x \n", EPCS_APL_BOOT_ADDR);
+													return(EPCS_ERR);
+												}
+											  else {
+												  epcs_start_address_rg = epcs_area->data;
+												  dbg_printf("EPCS_START ADDR -> %x \n", epcs_start_address_rg);
+											  }
 											  break;
-			case EPCS_TOTAL_LENTH_ADDR		: epcs_total_lenth_rg = epcs_area->data;alt_putstr("EPCS_SET_LENGTH\n");
+
+			case EPCS_TOTAL_LENTH_ADDR		: epcs_total_lenth_rg = epcs_area->data; dbg_printf("EPCS_SET_LENGTH -> %x \n", epcs_total_lenth_rg);
 											  break;
-			case EPCS_COMMANDS_ADDR    		: epcs_cmd_rg = epcs_area->data; alt_putstr("EPCS_SET_CMD -> ");
+
+			case EPCS_COMMANDS_ADDR    		: epcs_cmd_rg = epcs_area->data; dbg_printf("EPCS_SET_CMD -> %x \n",epcs_cmd_rg );
 											  epcs_run_cmd();
 											  break;
+
+			case EPCS_APL_FROM_ADDR		    : return(EPCS_ERR);
+
+
+
+
 			default : 	return(EPCS_ERR);
 		}
 
@@ -67,7 +87,7 @@ void epcs_read_flash_id(void)
 											 	EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET);
 
 	UartCmd_Send_SW_reg_val(EPCS_ID_ADDR,epcs_id_rg);
-	alt_putstr("EPCS_READ_ID\n");
+	dbg_putstr("EPCS_READ_ID\n");
 }
 
 ///
@@ -87,7 +107,7 @@ alt_u8 epcs_run_cmd(void)
 							  epcs_start_address_rg,
 							  0x0);
 			epcs_cmd_rg = EPCS_CMD_NULL;
-			 alt_putstr("EPCS_SECTOR_ERASE\n");
+			 dbg_putstr("EPCS_SECTOR_ERASE\n");
 			break;
 
 		case EPCS_CMD_UPDATE_FIRMWARE	: g_EPCS_STATE = EPCS_STATE_WRITE_FW; break;
@@ -100,55 +120,73 @@ alt_u8 epcs_run_cmd(void)
 
 ///
 
-void epcs_write_fw(alt_u8*  src_data,alt_u16 len)
+alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len)
 {
-	static alt_u32 bytes_written;
+	static alt_u32 bytes_written = 0;
 	alt_u16 n_bytes;
 	alt_u16 write_cnt;
 	alt_u8  write_buf[1024];
+	alt_u8  *write_buf_xp;
 	int i =0;
 
+	write_cnt = 0;
 	n_bytes = len;
 	//write_buf = 0;
 
-	for(i=0;i<len;i++) // bit swap
-	{
-		write_buf[i] = BitReverseTable256[*(src_data+i)];
+	write_buf_xp = &write_buf[0];
+	bytes_written = 0;
 
+	if(n_bytes == 0 || epcs_start_address_rg < EPCS_APL_BOOT_ADDR)
+	{
+		dbg_putstr("EPCS_ERR\n");
+		return(EPCS_ERR);
+	}
+	else
+	{
+		for(i=0;i<len;i++) // reverse byte requires for Altera
+			{
+				write_buf[i] = *src_data;
+				write_buf[i] = BitReverseTable256[write_buf[i]];
+				src_data++;
+
+			}
+
+			while(n_bytes >= 256) // maximum write length
+			{
+					epcs_write_buffer(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
+									  epcs_start_address_rg,
+									  &write_buf[bytes_written],
+					                  256,
+					                  0x0);
+					epcs_start_address_rg += 256;
+					write_cnt += 256;
+					n_bytes -=256;
+					bytes_written += 256;
+					write_buf_xp += bytes_written;
+			}
+			if(n_bytes != 0) // packet less the 256 bytes
+			{
+				epcs_write_buffer(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
+													  epcs_start_address_rg,
+													  &write_buf[bytes_written],
+													  n_bytes,
+									                  0x0);
+				bytes_written += n_bytes;
+				epcs_start_address_rg += n_bytes;
+				n_bytes = 0;
+			}
+
+			if(bytes_written == epcs_total_lenth_rg)
+			{
+				epcs_cmd_rg = EPCS_CMD_NULL;
+				g_EPCS_STATE = EPCS_STATE_IDLE;
+				bytes_written = 0;
+			}
+
+			dbg_printf("EPCS_WRITE_DATA -> %x \n", bytes_written);
+			return(EPCS_OK);
 	}
 
-	while(n_bytes >= 256) // maximum write length
-	{
-			epcs_write_buffer(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
-							  epcs_start_address_rg,
-							  &write_buf + write_cnt,
-			                  256,
-			                  0x0);
-			epcs_start_address_rg += 256;
-			write_cnt += 256;
-			n_bytes -=256;
-			bytes_written += 256;
-	}
-	if(n_bytes != 0) // packet less the 256 bytes
-	{
-		epcs_write_buffer(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
-											  epcs_start_address_rg,
-											  &write_buf,
-											  n_bytes,
-							                  0x0);
-		bytes_written += n_bytes;
-		epcs_start_address_rg += n_bytes;
-		n_bytes = 0;
-	}
-
-	if(bytes_written == epcs_total_lenth_rg)
-	{
-		epcs_cmd_rg = EPCS_CMD_NULL;
-		g_EPCS_STATE = EPCS_STATE_IDLE;
-		bytes_written = 0;
-	}
-
-	alt_putstr("EPCS_WRITE_DATA\n");
 }
 
 ///
@@ -158,24 +196,27 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 	alt_u8  rd_buf[1024];
 	int i =0;
 	alt_u16 last_len;
+	alt_u8  *rd_buf_xp;
 
+	rd_buf_xp = &rd_buf[0];
 
-
-	if(epcs_total_lenth_rg >= 1024) // maximum packe data len
+	if(epcs_total_lenth_rg >= 1024) // maximum packet data len
 	{
 		epcs_read_buffer(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
 				epcs_start_address_rg,
-				&rd_buf,
+				&rd_buf[0],
 				1024,
 		        0x0);
 		for(i=0;i<1024;i++) // bit swap
 		{
-			*src_data = BitReverseTable256[rd_buf[i]];
+			rd_buf[i]= BitReverseTable256[rd_buf[i]];
+			*src_data = rd_buf[i];
 			src_data++;
+			rd_buf_xp++;
 		}
 		epcs_start_address_rg +=1024;
 		epcs_total_lenth_rg -= 1024;
-		//alt_putstr("EPCS_READ_DATA\n");
+		dbg_putstr("EPCS_READ_DATA\n");
 
 		if(epcs_total_lenth_rg == 0)
 		{
@@ -202,8 +243,10 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 				epcs_total_lenth_rg = 0;
 				epcs_cmd_rg = EPCS_CMD_NULL;
 				g_EPCS_STATE = EPCS_STATE_IDLE;
-				alt_putstr("EPCS_READ_DATA\n");
+				dbg_putstr("EPCS_READ_DATA\n");
 				return(last_len);
 	}
+	else 	return(0);
+
 
 }

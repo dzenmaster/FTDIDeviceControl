@@ -18,14 +18,16 @@ enum {
 /// Current module state or response command state
 
 enum {
-	NIOS_CMD_OK 		      = 0x0,
-	NIOS_CMD_WRONG_SYNC       = 0x1,
-	NIOS_CMD_LEN_USEDW_ERR    = 0x2,
-	NIOS_CMD_TIMEOUT_OCCURRED = 0x3,
-	NIOS_CMD_BUSY			  = 0x4,
-	NIOS_CMD_WRONG_COMMAND	  = 0x5,
-	NIOS_CMD_UNKN_PKG_TYPE	  = 0x6,
-	NIOS_CMD_SW_RG_WRITE_ERR  = 0x7
+	NIOS_CMD_OK 		       = 0x0,
+	NIOS_CMD_WRONG_SYNC        = 0x1,
+	NIOS_CMD_LEN_USEDW_ERR     = 0x2,
+	NIOS_CMD_TIMEOUT_OCCURRED  = 0x3,
+	NIOS_CMD_BUSY			   = 0x4,
+	NIOS_CMD_WRONG_COMMAND	   = 0x5,
+	NIOS_CMD_UNKN_PKG_TYPE	   = 0x6,
+	NIOS_CMD_SW_RG_WRITE_ERR   = 0x7,
+	NIOS_CMD_EPCS_READ_ERR     = 0x8,
+	NIOS_CMD_EPCS_WRITE_ERR    = 0x9,
 };
 
 ///

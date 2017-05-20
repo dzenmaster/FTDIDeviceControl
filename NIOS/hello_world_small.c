@@ -108,7 +108,7 @@ alt_u8 state = 0;
 
 int main()
 { 
-  alt_putstr("Hello from Nios II!\n");
+	dbg_putstr("Hello from Nios II!\n");
 //  epcs_read_buffer(EPCS_FLASH_CONTROLLER_0_BASE+ EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET, 0x0,&rd_data, 1024,0x0);
   /* Event loop never exits. */
   while (1)
@@ -118,19 +118,27 @@ int main()
 		 uart_status = UartCmd_GET_STATUS();
 		 if((uart_status & 0x2)>>1)
 		 {
-			 alt_putstr("Timeout has been occurred!\n");
+			 dbg_putstr("Timeout has been occurred!\n");
 			 send_response_packet(NIOS_CMD_TIMEOUT_OCCURRED);
 		 }
 
 		 if((uart_status & 0x4)>>2)
 		 {
-			 alt_putstr("Wrong Sync Word!\n");
+			 dbg_putstr("Wrong Sync Word!\n");
 			 send_response_packet(NIOS_CMD_WRONG_SYNC);
+		 }
+
+		 if((uart_status & 0x8)>>3)
+		 {
+			 dbg_putstr("Write to RX FIFO ERROR!\n");
+
 		 }
 	 }
 	 while ((uart_status & 0x1) == 0);
 
  	 pkg_type = UartCmd_get_pkg_type();
+
+
 
 	 switch (pkg_type)
 	 {
@@ -141,18 +149,24 @@ int main()
 	 	 case 0x3 : process_SW_registers();	 break;
 
 	 	 case 0x4 : if(g_EPCS_STATE == EPCS_STATE_WRITE_FW)
+	 	 	 	 	 {
 	 		 	 	 	 process_epcs_flash(g_EPCS_STATE); // firmware area
+	 	 	 	 	 	}
 	 	 	 	 	 else
 					 {
-						 // here EPCS write parameters data
+	 	 	 	 		dbg_putstr("UnProcessed Packet\n");
+
+	 	 	 	 		 // here EPCS write parameters data
 					 }
 	 		 	 	break;
 	 	default:
 	 	{
-	 		alt_putstr("Unknown Packet Type\n");
+	 		dbg_putstr("Unknown Packet Type\n");
 	 		send_response_packet(NIOS_CMD_UNKN_PKG_TYPE);
 	 	}
 	 }
+
+	 uart_status = UartCmd_GET_STATUS();
 
 	 if(g_EPCS_STATE == EPCS_STATE_READ_FW)
 		 {

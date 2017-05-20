@@ -36,7 +36,10 @@ alt_u16 UartCmd_get_data(alt_u8* data)
 	rcvd_bytes = UartCmd_FIFO_RX_USEDW_RD();
 	pkg_len = UartCmd_get_pkg_len();
 		if(rcvd_bytes != pkg_len)
-			 alt_putstr("pkg_len and FIFO RX USEDW are not equal!\n");
+		{
+			 dbg_putstr("pkg_len and FIFO RX USEDW are not equal!\n");
+			send_response_packet(NIOS_CMD_LEN_USEDW_ERR);
+		}
 	 for(i=0; i < pkg_len; i++)
 	  {
 		 *data  = UartCmd_READ_FIFO_RX_DATA();
