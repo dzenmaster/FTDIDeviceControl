@@ -49,7 +49,7 @@ private:
 	QString m_lastErrorStr;
 
 
-	void openPort(int aNum);
+	bool openPort(int aNum);
 	void closePort();
 	int waitForPacket(int& tt, int& aCode);
 	QByteArray hexStringToByteArray(QString& aStr);
@@ -71,6 +71,8 @@ private slots:
 	void slWriteLength();
 	void slUpdateFirmware();
 	void slReadFlash();
+	void slUpdateFirmware2();
+	void slConnectToDevice();
 };
 
 #endif // FTDIDEVICECONTROL_H
