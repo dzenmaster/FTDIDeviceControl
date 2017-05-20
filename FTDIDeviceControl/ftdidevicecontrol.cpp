@@ -176,7 +176,10 @@ void FTDIDeviceControl::slGetInfo()
 
 	bool tResult = true;
 	for (unsigned char nc=0; nc < 4; ++nc){
-		buff[5] = nc; // get type sn firmware software
+		if (sendPacket(PKG_TYPE_INFO, 1, REG_RD, nc)!=0)	{
+			ui.teReceive->append("error : " + m_lastErrorStr);		
+		}
+	/*	buff[5] = nc; // get type sn firmware software
 
 		m_waitingThread->setWaitForPacket(0x00);
 		ftStatus = FT_Write(m_handle, buff, 6, &ret);
@@ -193,7 +196,7 @@ void FTDIDeviceControl::slGetInfo()
 		else{
 			ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));
 		}
-		QApplication::processEvents();
+		QApplication::processEvents();*/
 	}
 	
 	ui.widget_3->setEnabled(tResult);
@@ -348,7 +351,7 @@ void FTDIDeviceControl::slWriteFlash()
 		wasRW+=nWasRead;
 		quint16 tLen = nWasRead;
 		memcpy(&buff[3],&tLen,2); 
-		m_waitingThread->setWaitForPacket(0x01);	
+		m_waitingThread->setWaitForPacket(PKG_TYPE_ERRORMES);	
 		Sleep(100);//костыль
 		ftStatus = FT_Write(m_handle, buff, 1029, &ret);
 		//ftStatus = FT_Write(m_handle, buff, 133, &ret);
@@ -396,8 +399,12 @@ void FTDIDeviceControl::slWriteFlash()
 	//		ответ от модуля a5 5a 03 |07 00|01|03 00| XX XX XX XX
 	//	| LEN |rd|RgAdr|data	
 	ui.teReceive->append("Checking...\n");
-
-	char buff2[] = { 0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x03, 0x00 };
+	
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 3)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+	
+/*	char buff2[] = { 0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x03, 0x00 };
 	m_waitingThread->setWaitForPacket(0x03);
 	Sleep(50);//костыль
 	ftStatus = FT_Write(m_handle, buff2, 8, &ret);
@@ -412,7 +419,8 @@ void FTDIDeviceControl::slWriteFlash()
 	}
 	else {
 		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));	
-	} 
+	} */
+
 
 	ui.tabWidget->setEnabled(true);
 	QApplication::processEvents();	
@@ -426,8 +434,6 @@ void FTDIDeviceControl::slSend()
 	FT_STATUS ftStatus = FT_OK;	
 	QString str = ui.leSend->text();
 	QByteArray ba = hexStringToByteArray(str);
-	//QByteArray ba = str.toLocal8Bit();		
-
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");		
 	}
@@ -516,7 +522,13 @@ void FTDIDeviceControl::slEraseFlash()
 	DWORD ret;	
 
 	for (unsigned char i = 0; i < 13; ++i) {
-		char buff[] = {0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, i, 0x00 }; // set start epcs addr sector 0 
+	
+		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x10000)!=0)	{
+			ui.teReceive->append("error : " + m_lastErrorStr);
+			break;
+		}
+
+	/*	char buff[] = {0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, i, 0x00 }; // set start epcs addr sector 0 
 		m_waitingThread->setWaitForPacket(0x01);
 		ftStatus = FT_Write(m_handle, buff, 12, &ret);
 		if (ftStatus!=FT_OK) {
@@ -535,9 +547,16 @@ void FTDIDeviceControl::slEraseFlash()
 				ui.teReceive->append(QString("set start epcs error %1\n").arg(tCode));
 				break;
 			}
-		}
+		}*/
+
 		Sleep(100);//костыль потом отладить
-		char buff2[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00};
+
+		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x03)!=0)	{
+			ui.teReceive->append("error : " + m_lastErrorStr);
+			break;
+		}
+
+	/*	char buff2[] = { 0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00};
 		m_waitingThread->setWaitForPacket(0x01);
 		ftStatus = FT_Write(m_handle, buff2, 12, &ret);
 		if (ftStatus!=FT_OK) {
@@ -556,11 +575,15 @@ void FTDIDeviceControl::slEraseFlash()
 				ui.teReceive->append(QString("erase error %1\n").arg(tCode));
 				break;
 			}
-		}
+		}*/
 		Sleep(100);//костыль потом отладить
 		QApplication::processEvents();
 	}	
 	//back address
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, 0x00)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+	/*
 	char buff3[] = {0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 }; // set start epcs addr sector 0 
 	m_waitingThread->setWaitForPacket(0x01);
 	ftStatus = FT_Write(m_handle, buff3, 12, &ret);
@@ -579,7 +602,7 @@ void FTDIDeviceControl::slEraseFlash()
 			ui.teReceive->append(QString("set start epcs error %1\n").arg(tCode));			
 		}
 	}
-
+	*/
 
 	setEnabled(true);
 	m_mtx.unlock();
@@ -594,7 +617,18 @@ void FTDIDeviceControl::slWriteLength()
 	//	         | LEN |wr|RgAdr|data	    |  
 
 	//	ответ от модуля  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS	
-	if(m_handle == NULL) {
+
+	quint32 sz = 0;
+	QString fileName = ui.lePathToRBF->text();
+	if (QFile::exists(fileName)) {
+		QFileInfo fi(fileName);
+		sz = fi.size();
+	}
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x02, sz)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+
+/*	if(m_handle == NULL) {
 		QMessageBox::critical(this, "closed", "need to open device");
 		m_mtx.unlock();
 		return;
@@ -632,7 +666,7 @@ void FTDIDeviceControl::slWriteLength()
 			ui.teReceive->append(QString("write length error %1\n").arg(tCode));		
 		}
 	}
-	QApplication::processEvents();
+	QApplication::processEvents();*/
 	m_mtx.unlock();
 }
 
@@ -645,7 +679,12 @@ void FTDIDeviceControl::slUpdateFirmware()
 //		| LEN |wr|RgAdr|data	    | 
 
 //		ответ от модуля  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS
-	if(m_handle == NULL) {
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x04)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+
+/*	if(m_handle == NULL) {
 		QMessageBox::critical(this, "closed", "need to open device");
 		m_mtx.unlock();
 		return;
@@ -676,7 +715,7 @@ void FTDIDeviceControl::slUpdateFirmware()
 			ui.teReceive->append(QString("Update firmware error %1\n").arg(tCode));		
 		}
 	}
-	QApplication::processEvents();
+	QApplication::processEvents();*/
 	m_mtx.unlock();
 }
 
@@ -690,7 +729,11 @@ void FTDIDeviceControl::slReadFlash()
 	
 	if (!m_mtx.tryLock())
 		return;
-	if(m_handle == NULL) {
+	
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, 0x00)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+/*	if(m_handle == NULL) {
 		QMessageBox::critical(this, "closed", "need to open device");
 		m_mtx.unlock();
 		return;
@@ -727,9 +770,14 @@ void FTDIDeviceControl::slReadFlash()
 			return;
 		}
 	}
-	QApplication::processEvents();	
+	QApplication::processEvents();	*/
 	Sleep(100);//костыль
-	char buff2[] = {0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x02, 0x00 }; //read length 
+
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0x02)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+
+	/*char buff2[] = {0xA5, 0x5A, 0x03, 0x03, 0x00, 0x01, 0x02, 0x00 }; //read length 
 	m_waitingThread->setWaitForPacket(0x03);
 	ftStatus = FT_Write(m_handle, buff2, 8, &ret);
 	if (ftStatus!=FT_OK) {
@@ -746,7 +794,7 @@ void FTDIDeviceControl::slReadFlash()
 	}
 	else {
 		ui.teReceive->append(QString("read length good Wait %1ms\n").arg(tWTime));
-	}
+	}*/
 	Sleep(100);//костыль
 	//start of reading
 	//a5 5a 03 07 00 00 03 00 05 00 00 00
@@ -762,21 +810,24 @@ void FTDIDeviceControl::slReadFlash()
 	if (tFileName.isEmpty())
 		tFileName = "a.rbf";
 	m_inputFile = new QFile(tFileName);
-	if (!m_inputFile->open(QIODevice::WriteOnly))
-	{
+	if (!m_inputFile->open(QIODevice::WriteOnly)) {
 		m_inputFile = 0;
 		ui.teReceive->append("Open file error\n");
 		QApplication::processEvents();
 		m_mtx.unlock();
 		return;
 	}
-	char buff3[] = {0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x05, 0x00, 0x00, 0x00}; 	
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x05)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+	}
+/*	char buff3[] = {0xA5, 0x5A, 0x03, 0x07, 0x00, 0x00, 0x03, 0x00, 0x05, 0x00, 0x00, 0x00}; 	
 	ftStatus = FT_Write(m_handle, buff3, 12, &ret);
 	if (ftStatus!=FT_OK) {
 		QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 	}
 
-	QApplication::processEvents();
+	QApplication::processEvents();*/
 	m_mtx.unlock();
 }
 
@@ -806,13 +857,21 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 			fullLen = 12;
 		}
 	}
+	else if (aType ==PKG_TYPE_INFO){
+		//(sendPacket(PKG_TYPE_INFO, 1, REG_RD, nc)
+		m_buff[5] = (unsigned char)(aAddr&0xFF);
+	}
 	else{
 		return -1;
 	}
 	DWORD ret;
+	
 	unsigned char typeToWait = PKG_TYPE_ERRORMES;
-	if (aType==PKG_TYPE_RWSW)
+	if ((aType==PKG_TYPE_RWSW)&&(aRdWr==REG_RD)) // if read register
 		typeToWait=PKG_TYPE_RWSW;
+	if (aType ==PKG_TYPE_INFO)
+		typeToWait=PKG_TYPE_INFO;
+
 	m_waitingThread->setWaitForPacket(typeToWait);
 	
 	FT_STATUS ftStatus = FT_Write(m_handle, m_buff, fullLen, &ret);
@@ -825,15 +884,18 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 	int tWTime=0;
 	int tCode=-1;
 	if (waitForPacket(tWTime, tCode)==1) {		
-		m_lastErrorStr = "Wait timeout\n";
-		//ui.teReceive->append(QString("read error %1\n").arg(tCode));
+		m_lastErrorStr = "Wait timeout\n";		
 		return -1;
 	}
 	else {
 		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));	
+		if (typeToWait==PKG_TYPE_ERRORMES){
+			if (tCode!=0) {
+				m_lastErrorStr = QString("Error code %1\n").arg(tCode);	
+				return -1;
+			}
+		}
 	}
 	QApplication::processEvents();
-
-
 	return 0;
 }
