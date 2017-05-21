@@ -14,6 +14,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 {
 	ui.setupUi(this);
 	
+	
+	ui.tabWidget->removeTab(4);
 	ui.pbUpdateFirmware2->setEnabled(false);
 	ui.tabWidget->setEnabled(false);
 
@@ -22,6 +24,9 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	m_buff[0]=0xA5;
 	m_buff[1]=0x5A;
 	memset(&m_buff[2], 0, 2046);
+	connect(ui.cbShowTerminal, SIGNAL(toggled(bool)), SLOT(slShowTerminal(bool)));
+	
+
 	connect(ui.pbSend, SIGNAL(clicked()), SLOT(slSend()));
 	connect(ui.pbOpen, SIGNAL(clicked()), SLOT(slOpen()));
 	connect(ui.pbClose, SIGNAL(clicked()), SLOT(slClose()));
@@ -42,8 +47,28 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 
 
 FTDIDeviceControl::~FTDIDeviceControl()
-{
+{	
 	closePort();
+	ui.wTerm->close();
+}
+
+	
+void	FTDIDeviceControl::closeEvent(QCloseEvent * event)
+{
+	ui.wTerm->close();
+}
+
+
+void FTDIDeviceControl::slShowTerminal(bool st)
+{
+	if (st){
+		ui.wTerm->setParent(0);
+		ui.wTerm->setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::WindowMaximizeButtonHint);
+		ui.wTerm->show();
+	}
+	else {
+		ui.wTerm->hide();
+	}
 }
 
 void FTDIDeviceControl::fillDeviceList()

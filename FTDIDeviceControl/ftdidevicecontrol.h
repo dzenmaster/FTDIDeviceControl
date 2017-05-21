@@ -33,6 +33,9 @@ public:
 	FTDIDeviceControl(QWidget *parent = 0);
 	~FTDIDeviceControl();
 
+protected:
+	virtual void	closeEvent(QCloseEvent * event);
+
 private:
 	Ui::FTDIDeviceControlClass ui;
 
@@ -58,6 +61,8 @@ private:
 	bool setRbfFileName(const QString&);
 
 private slots:
+	void slShowTerminal(bool);
+
 	void slSend();
 	void addDataToTE(const QString& str);
 	void slOpen();
