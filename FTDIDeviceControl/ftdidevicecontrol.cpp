@@ -16,7 +16,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	
 	
 	ui.tabWidget->removeTab(4);
-	ui.pbUpdateFirmware2->setEnabled(false);
+	ui.pbUpdateFirmware->setEnabled(false);
 	ui.tabWidget->setEnabled(false);
 
 	setRbfFileName(g_Settings.value("rbfFileName", "").toString());
@@ -36,10 +36,10 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
 	connect(ui.pbReadFlashID, SIGNAL(clicked()), SLOT(slReadFlashID()));
 	connect(ui.pbEraseFlash, SIGNAL(clicked()), SLOT(slEraseFlash()));
-	connect(ui.pbUpdateFirmware, SIGNAL(clicked()), SLOT(slUpdateFirmware()));
+	connect(ui.pbWriteCmdUpdateFirmware, SIGNAL(clicked()), SLOT(slWriteCmdUpdateFirmware()));
 	connect(ui.pbWriteLength, SIGNAL(clicked()), SLOT(slWriteLength()));
 	connect(ui.pbReadFlash, SIGNAL(clicked()), SLOT(slReadFlash()));
-	connect(ui.pbUpdateFirmware2, SIGNAL(clicked()), SLOT(slUpdateFirmware2()));
+	connect(ui.pbUpdateFirmware, SIGNAL(clicked()), SLOT(slUpdateFirmware()));
 	connect(ui.pbConnectToDevice, SIGNAL(clicked()), SLOT(slConnectToDevice()));
 
 	fillDeviceList();
@@ -525,7 +525,7 @@ bool FTDIDeviceControl::slWriteLength()
 	return true;
 }
 
-bool FTDIDeviceControl::slUpdateFirmware()
+bool FTDIDeviceControl::slWriteCmdUpdateFirmware()
 {
 	if (!m_mtx.tryLock())
 		return false;
@@ -648,21 +648,34 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 	return 0;
 }
 
-void FTDIDeviceControl::slUpdateFirmware2()
+void FTDIDeviceControl::slUpdateFirmware()
 {
-	if (!slBrowseRBF())
+
+	if (!slBrowseRBF()){	
+		QMessageBox::critical(0,"Open RBF error","Open RBF  error");
 		return;
+	}
 	ui.tabWidget->setCurrentIndex(1);
-	if (!slReadFlashID())
+	if (!slReadFlashID()){	
+		QMessageBox::critical(0,"ReadFlashID error","ReadFlashID error");
 		return;
-	if (!slEraseFlash())
+	}
+	if (!slEraseFlash()){	
+		QMessageBox::critical(0,"EraseFlash error","EraseFlash error");
 		return;
-	if (!slWriteLength())
+	}
+	if (!slWriteLength()){	
+		QMessageBox::critical(0,"WriteLength error","WriteLength error");
 		return;
-	if (!slUpdateFirmware())
+	}
+	if (!slWriteCmdUpdateFirmware()){	
+		QMessageBox::critical(0,"WriteCmdUpdateFirmware error","WriteCmdUpdateFirmware error");
 		return;
-	if (!slWriteFlash())
+	}
+	if (!slWriteFlash()){	
+		QMessageBox::critical(0,"WriteFlash error","WriteFlash error");
 		return;
+	}
 }
 
 void FTDIDeviceControl::slConnectToDevice()
@@ -670,7 +683,7 @@ void FTDIDeviceControl::slConnectToDevice()
 	bool tResult = false;
 	if (ui.cbFTDIDevice->count()>0)
 		tResult = openPort(ui.cbFTDIDevice->currentIndex());
-	ui.pbUpdateFirmware2->setEnabled(tResult);
+	ui.pbUpdateFirmware->setEnabled(tResult);
 	ui.tabWidget->setEnabled(tResult);
 	if (tResult)
 		slGetInfo();

@@ -49,7 +49,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>4</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -234,7 +234,7 @@
           <string>Write Len</string>
          </property>
         </widget>
-        <widget class="QPushButton" name="pbUpdateFirmware">
+        <widget class="QPushButton" name="pbWriteCmdUpdateFirmware">
          <property name="geometry">
           <rect>
            <x>320</x>
@@ -534,7 +534,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pbUpdateFirmware2">
+        <widget class="QPushButton" name="pbUpdateFirmware">
          <property name="text">
           <string>Update</string>
          </property>

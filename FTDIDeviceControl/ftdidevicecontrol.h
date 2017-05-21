@@ -74,9 +74,9 @@ private slots:
 	bool slReadFlashID();
 	bool slEraseFlash();
 	bool slWriteLength();
-	bool slUpdateFirmware();
+	bool slWriteCmdUpdateFirmware();
 	void slReadFlash();
-	void slUpdateFirmware2();
+	void slUpdateFirmware();
 	void slConnectToDevice();
 };
 
