@@ -47,15 +47,15 @@ alt_u8 epcs_commands(epcs_reg_t *epcs_area)
 			case EPCS_ID_ADDR 				: return(EPCS_ERR);//send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR); // only read register
 											  break;
 
-			case EPCS_START_ADDRESS_ADDR	:  if(epcs_area->data < EPCS_APL_BOOT_ADDR){
+			case EPCS_START_ADDRESS_ADDR	: /* if(epcs_area->data < EPCS_APL_BOOT_ADDR){
 													 dbg_printf("EPCS_START ADDR -> %x \n", epcs_area->data);
 													 dbg_printf("ERROR : Need to set ADDR from -> %x \n", EPCS_APL_BOOT_ADDR);
 													return(EPCS_ERR);
 												}
-											  else {
-												  epcs_start_address_rg = epcs_area->data;
+											  else {*/
+												  epcs_start_address_rg = epcs_area->data + EPCS_APL_BOOT_ADDR;
 												  dbg_printf("EPCS_START ADDR -> %x \n", epcs_start_address_rg);
-											  }
+											 // }
 											  break;
 
 			case EPCS_TOTAL_LENTH_ADDR		: epcs_total_lenth_rg = epcs_area->data; dbg_printf("EPCS_SET_LENGTH -> %x \n", epcs_total_lenth_rg);
@@ -122,18 +122,17 @@ alt_u8 epcs_run_cmd(void)
 
 alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len)
 {
-	static alt_u32 bytes_written = 0;
+	alt_u32 bytes_written;
 	alt_u16 n_bytes;
 	alt_u16 write_cnt;
 	alt_u8  write_buf[1024];
-	alt_u8  *write_buf_xp;
+	static alt_u32 total_bytes;
+
 	int i =0;
 
 	write_cnt = 0;
 	n_bytes = len;
-	//write_buf = 0;
 
-	write_buf_xp = &write_buf[0];
 	bytes_written = 0;
 
 	if(n_bytes == 0 || epcs_start_address_rg < EPCS_APL_BOOT_ADDR)
@@ -162,7 +161,7 @@ alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len)
 					write_cnt += 256;
 					n_bytes -=256;
 					bytes_written += 256;
-					write_buf_xp += bytes_written;
+
 			}
 			if(n_bytes != 0) // packet less the 256 bytes
 			{
@@ -175,15 +174,16 @@ alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len)
 				epcs_start_address_rg += n_bytes;
 				n_bytes = 0;
 			}
+			total_bytes+=bytes_written;
 
-			if(bytes_written == epcs_total_lenth_rg)
+			if(total_bytes == epcs_total_lenth_rg)
 			{
 				epcs_cmd_rg = EPCS_CMD_NULL;
 				g_EPCS_STATE = EPCS_STATE_IDLE;
-				bytes_written = 0;
 			}
 
-			dbg_printf("EPCS_WRITE_DATA -> %x \n", bytes_written);
+			dbg_printf("EPCS_WRITE_DATA -> %x \n", total_bytes);
+			total_bytes = 0;
 			return(EPCS_OK);
 	}
 

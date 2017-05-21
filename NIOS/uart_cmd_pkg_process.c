@@ -5,6 +5,7 @@
 #include "uart_cmd.h"
 #include "uart_cmd_pkg_process.h"
 #include "epcs_flash.h"
+#include "RSU.h"
 
 ///
 
@@ -106,6 +107,7 @@ void process_epcs_flash(alt_u8 sate)
 		{
 			do
 			{
+				RsuWdReset();
 				len=epcs_read_fw(&buf);
 				if(len != 0)
 					UartCmd_Send_Stream(buf,len);

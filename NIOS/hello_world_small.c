@@ -85,6 +85,7 @@
 #include "uart_cmd.h"
 #include "uart_cmd_pkg_process.h"
 #include "epcs_flash.h"
+#include "RSU.h"
 
 
 
@@ -108,13 +109,15 @@ alt_u8 state = 0;
 
 int main()
 { 
-	dbg_putstr("Hello from Nios II!\n");
+	dbg_printf("Hello from Nios II!\n\r");
 //  epcs_read_buffer(EPCS_FLASH_CONTROLLER_0_BASE+ EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET, 0x0,&rd_data, 1024,0x0);
   /* Event loop never exits. */
-  while (1)
+	RsuInit(0xF);
+ while (1)
   {
 	do
 	 {
+		RsuWdReset();
 		 uart_status = UartCmd_GET_STATUS();
 		 if((uart_status & 0x2)>>1)
 		 {

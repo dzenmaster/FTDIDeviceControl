@@ -11,7 +11,7 @@
 
 
 #define EPCS_APL_BOOT_ADDR 0x400000 // sector 64 *0x100000
-
+//#define EPCS_APL_BOOT_ADDR 0
 
 
 extern alt_u8 g_EPCS_STATE;
