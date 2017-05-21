@@ -55,7 +55,7 @@ private:
 	QByteArray hexStringToByteArray(QString& aStr);
 	void fillDeviceList();
 	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
-	void setRbfFileName(const QString&);
+	bool setRbfFileName(const QString&);
 
 private slots:
 	void slSend();
@@ -64,12 +64,12 @@ private slots:
 	void slClose();
 	void slGetInfo();
 	void slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData);
-	void slBrowseRBF();
-	void slWriteFlash();
-	void slReadFlashID();
-	void slEraseFlash();
-	void slWriteLength();
-	void slUpdateFirmware();
+	bool slBrowseRBF();
+	bool slWriteFlash();
+	bool slReadFlashID();
+	bool slEraseFlash();
+	bool slWriteLength();
+	bool slUpdateFirmware();
 	void slReadFlash();
 	void slUpdateFirmware2();
 	void slConnectToDevice();

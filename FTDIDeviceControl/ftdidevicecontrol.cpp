@@ -256,26 +256,29 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 	return 1; // timeout;
 }
 
-void FTDIDeviceControl::slBrowseRBF()
+bool FTDIDeviceControl::slBrowseRBF()
 {	
-	setRbfFileName(QFileDialog::getOpenFileName(this,"Open RBF","", "RBF Files (*.rbf)"));	
+	return setRbfFileName(QFileDialog::getOpenFileName(this,"Open RBF","", "RBF Files (*.rbf)"));
+
 }
 
-void FTDIDeviceControl::setRbfFileName(const QString& fn)
+bool FTDIDeviceControl::setRbfFileName(const QString& fn)
 {
 	m_rbfFileName  = fn;
-		ui.lePathToRBF->setText(m_rbfFileName );
+	ui.lePathToRBF->setText(m_rbfFileName );
 	if (QFile::exists(m_rbfFileName )) {
 		QFileInfo fi(m_rbfFileName);
 		ui.lSize->setText(QString("Size %1").arg(fi.size()));
 		g_Settings.setValue("rbfFileName", m_rbfFileName);
+		return true;
 	}
+	return false;
 }
 
-void FTDIDeviceControl::slWriteFlash()
+bool FTDIDeviceControl::slWriteFlash()
 {
 	if (!m_mtx.tryLock())
-		return;
+		return false;
 	//5. Далее просто посылать пакеты (type = 0x04) по 1024 байта(последний пакет будет меньшего размера); после каждого пакета должен приходить пакет OK. 
 	//	a5 5a 04 |00 04|00 00...........
 	//	| LEN |data.................. 
@@ -284,18 +287,18 @@ void FTDIDeviceControl::slWriteFlash()
 	if(m_handle == NULL) {
 		QMessageBox::critical(this, "closed", "need to open device");
 		m_mtx.unlock();
-		return;
+		return false;
 	}
 	if (m_flashID!=0x16){
 		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
 		m_mtx.unlock();
-		return;	
+		return false;	
 	}
 	QString fileName = ui.lePathToRBF->text();
 	if (!QFile::exists(fileName)) {
 		QMessageBox::critical(this, "no file", "no file");
 		m_mtx.unlock();
-		return;	
+		return false;	
 	}
 
 	ui.tabWidget->setEnabled(false);
@@ -311,7 +314,7 @@ void FTDIDeviceControl::slWriteFlash()
 		QMessageBox::critical(this, "open err", "open err");
 		ui.tabWidget->setEnabled(true);
 		m_mtx.unlock();
-		return;	
+		return false;	
 	}
 	buff[0] = 0xA5;
 	buff[1] = 0x5A;
@@ -367,7 +370,7 @@ void FTDIDeviceControl::slWriteFlash()
 		ui.tabWidget->setEnabled(true);
 		QApplication::processEvents();	
 		m_mtx.unlock();
-		return;
+		return false;
 	}	
 	ui.teReceive->append("Checking...\n");	
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 3)!=0)	{
@@ -377,6 +380,7 @@ void FTDIDeviceControl::slWriteFlash()
 	ui.tabWidget->setEnabled(true);
 	QApplication::processEvents();	
 	m_mtx.unlock();
+	return true;
 }
 
 void FTDIDeviceControl::slSend()
@@ -400,19 +404,22 @@ void FTDIDeviceControl::slSend()
 }
 
 
-void FTDIDeviceControl::slReadFlashID()
+bool FTDIDeviceControl::slReadFlashID()
 {
 	if (!m_mtx.tryLock())
-		return;
+		return false;
 	
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0)!=0)	{
+		m_mtx.unlock();
 		ui.teReceive->append("error : " + m_lastErrorStr);		
+		return false;
 	}
 
 	m_mtx.unlock();
+	return true;
 }
 
-void FTDIDeviceControl::slEraseFlash()
+bool FTDIDeviceControl::slEraseFlash()
 {
 	// a5 5a 03 03 00 01 00 00
 
@@ -433,17 +440,17 @@ void FTDIDeviceControl::slEraseFlash()
 		2.3 проделать данную операцию для остальных секторов sector 1 = 1*0x010000; sector 2 = 2*0x010000; sector 12 = 12*0x010000 (см п.2.1)
 */
 	if (!m_mtx.tryLock())
-		return;
+		return false;
 
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
 		m_mtx.unlock();
-		return;
+		return false;
 	}
 	if (m_flashID!=0x16){
 		QMessageBox::critical(this,"wrong flash ID","wrong flash ID");
 		m_mtx.unlock();
-		return;	
+		return false;	
 	}
 	setEnabled(false);
 	FT_STATUS ftStatus = FT_OK;
@@ -462,17 +469,21 @@ void FTDIDeviceControl::slEraseFlash()
 	}	
 	//back address
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, 0x00)!=0)	{
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teReceive->append("error : " + m_lastErrorStr);	
+		setEnabled(true);
+		m_mtx.unlock();
+		return false;
 	}
 
 	setEnabled(true);
 	m_mtx.unlock();
+	return true;
 }
 
-void FTDIDeviceControl::slWriteLength()
+bool FTDIDeviceControl::slWriteLength()
 {
 	if (!m_mtx.tryLock())
-		return;
+		return false;
 
 	quint32 sz = 0;
 	QString fileName = ui.lePathToRBF->text();
@@ -481,19 +492,25 @@ void FTDIDeviceControl::slWriteLength()
 		sz = fi.size();
 	}
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x02, sz)!=0)	{//Записать полную длину файла
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teReceive->append("error : " + m_lastErrorStr);
+		m_mtx.unlock();
+		return false;
 	}
 	m_mtx.unlock();
+	return true;
 }
 
-void FTDIDeviceControl::slUpdateFirmware()
+bool FTDIDeviceControl::slUpdateFirmware()
 {
 	if (!m_mtx.tryLock())
-		return;
+		return false;
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x04)!=0) { // 4. Записать в регистр команду Update Firmware 0x4  -> addr=0x3 (Дождаться пакета OK)
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teReceive->append("error : " + m_lastErrorStr);	
+		m_mtx.unlock();
+		return false;
 	}
 	m_mtx.unlock();
+	return true;
 }
 
 void FTDIDeviceControl::slReadFlash()
@@ -611,7 +628,7 @@ void FTDIDeviceControl::slUpdateFirmware2()
 	if (!slBrowseRBF())
 		return;
 	ui.tabWidget->setCurrentIndex(1);
-	if (!slReadFlash())
+	if (!slReadFlashID())
 		return;
 	if (!slEraseFlash())
 		return;
