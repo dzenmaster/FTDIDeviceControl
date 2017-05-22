@@ -14,9 +14,11 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 {
 	ui.setupUi(this);
 	
+	ui.lModule->hide();
+	ui.cbModule->hide();
 	
-	ui.tabWidget->removeTab(4);
-	ui.pbUpdateFirmware->setEnabled(false);
+	ui.tabWidget->removeTab(0);
+	ui.tabWidget->removeTab(3);
 	ui.tabWidget->setEnabled(false);
 
 	setRbfFileName(g_Settings.value("rbfFileName", "").toString());
@@ -684,9 +686,11 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 
 void FTDIDeviceControl::slUpdateFirmware()
 {	
-	if (!slBrowseRBF()){	
-		QMessageBox::critical(0,"Open RBF error","Open RBF  error");
-		return;
+	if ( (m_rbfFileName!=ui.lePathToRBF->text())||(!QFile::exists(m_rbfFileName)) ) {
+		if (!slBrowseRBF()){	
+			QMessageBox::critical(0,"Open RBF error","Open RBF  error");
+			return;
+		}
 	}
 	ui.tabWidget->setCurrentIndex(1);
 	ui.statusBar->showMessage("Read Flash ID");
@@ -732,7 +736,6 @@ void FTDIDeviceControl::slConnectToDevice()
 		QMessageBox::critical(0,"Open error","Open error");
 		return;
 	}
-	ui.pbUpdateFirmware->setEnabled(true);
 	ui.tabWidget->setEnabled(true);
 	if (slGetInfo()){
 		ui.statusBar->showMessage("Connected successful");
