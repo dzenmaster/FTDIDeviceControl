@@ -412,7 +412,7 @@
               <item>
                <widget class="QPushButton" name="pbReadStartAddress">
                 <property name="text">
-                 <string>Read Start Addr</string>
+                 <string>Read Start Address</string>
                 </property>
                </widget>
               </item>
@@ -426,14 +426,14 @@
               <item>
                <widget class="QPushButton" name="pbWriteLength">
                 <property name="text">
-                 <string>Write Len</string>
+                 <string>Write Length</string>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="pbWriteCmdUpdateFirmware">
                 <property name="text">
-                 <string>UpdateFirmware</string>
+                 <string>Update Firmware</string>
                 </property>
                </widget>
               </item>
@@ -457,6 +457,20 @@
                <widget class="QPushButton" name="pbReadFlash">
                 <property name="text">
                  <string>ReadFlash</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pbJumpToFact">
+                <property name="text">
+                 <string>Jump to Fact</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pbJumpToAppl">
+                <property name="text">
+                 <string>Jump to Appl</string>
                 </property>
                </widget>
               </item>

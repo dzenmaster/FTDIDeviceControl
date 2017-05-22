@@ -81,6 +81,8 @@ private slots:
 	void slReadFlash();
 	void slUpdateFirmware();
 	void slConnectToDevice();
+	bool slJumpToFact();
+	bool slJumpToAppl();
 };
 
 #endif // FTDIDEVICECONTROL_H

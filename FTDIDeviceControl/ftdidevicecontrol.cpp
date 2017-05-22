@@ -26,8 +26,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	m_buff[0]=0xA5;
 	m_buff[1]=0x5A;
 	memset(&m_buff[2], 0, 2046);
-	connect(ui.cbShowTerminal, SIGNAL(toggled(bool)), SLOT(slShowTerminal(bool)));
-	
+	connect(ui.cbShowTerminal, SIGNAL(toggled(bool)), SLOT(slShowTerminal(bool)));	
 
 	connect(ui.pbSend, SIGNAL(clicked()), SLOT(slSend()));
 	connect(ui.pbOpen, SIGNAL(clicked()), SLOT(slOpen()));
@@ -45,10 +44,11 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbReadFlash, SIGNAL(clicked()), SLOT(slReadFlash()));
 	connect(ui.pbUpdateFirmware, SIGNAL(clicked()), SLOT(slUpdateFirmware()));
 	connect(ui.pbConnectToDevice, SIGNAL(clicked()), SLOT(slConnectToDevice()));
+	connect(ui.pbJumpToFact, SIGNAL(clicked()), SLOT(slJumpToFact()));
+	connect(ui.pbJumpToAppl, SIGNAL(clicked()), SLOT(slJumpToAppl()));
 
 	fillDeviceList();
 }
-
 
 FTDIDeviceControl::~FTDIDeviceControl()
 {	
@@ -750,4 +750,53 @@ void FTDIDeviceControl::slConnectToDevice()
 void FTDIDeviceControl::toLog(const QString& logStr)
 {
 //teLog
+}
+
+bool FTDIDeviceControl::slJumpToFact()
+{
+	if (!m_mtx.tryLock())
+		return false;
+		
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, 0x00)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);
+		m_mtx.unlock();
+		return false;
+	}
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x17, 0x01)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);
+		m_mtx.unlock();
+		return false;
+	}
+
+	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::slJumpToAppl()
+{
+	if (!m_mtx.tryLock())
+		return false;
+
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 4)!=0)	{
+		m_mtx.unlock();
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+		return false;
+	}
+	Sleep(200);
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, m_startAddr)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);
+		m_mtx.unlock();
+		return false;
+	}
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x17, 0x01)!=0)	{
+		ui.teReceive->append("error : " + m_lastErrorStr);
+		m_mtx.unlock();
+		return false;
+	}
+
+	m_mtx.unlock();
+	return true;
 }
