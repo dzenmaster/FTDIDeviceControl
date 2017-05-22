@@ -47,21 +47,21 @@ alt_u8 epcs_commands(epcs_reg_t *epcs_area)
 			case EPCS_ID_ADDR 				: return(EPCS_ERR);//send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR); // only read register
 											  break;
 
-			case EPCS_START_ADDRESS_ADDR	: /* if(epcs_area->data < EPCS_APL_BOOT_ADDR){
-													 dbg_printf("EPCS_START ADDR -> %x \n", epcs_area->data);
-													 dbg_printf("ERROR : Need to set ADDR from -> %x \n", EPCS_APL_BOOT_ADDR);
+			case EPCS_START_ADDRESS_ADDR	:  if(epcs_area->data < EPCS_APL_BOOT_ADDR){
+													 dbg_printf("[EPCS] Wrong start address-> %x \n\r", epcs_area->data);
+													 dbg_printf("[EPCS] Need to set ADDR from -> %x \n\r", EPCS_APL_BOOT_ADDR);
 													return(EPCS_ERR);
 												}
-											  else {*/
-												  epcs_start_address_rg = epcs_area->data + EPCS_APL_BOOT_ADDR;
-												  dbg_printf("EPCS_START ADDR -> %x \n", epcs_start_address_rg);
-											 // }
+											  else {
+												  epcs_start_address_rg = epcs_area->data;
+												  dbg_printf("[EPCS] Set start address -> %x \n\r", epcs_start_address_rg);
+											  }
 											  break;
 
-			case EPCS_TOTAL_LENTH_ADDR		: epcs_total_lenth_rg = epcs_area->data; dbg_printf("EPCS_SET_LENGTH -> %x \n", epcs_total_lenth_rg);
+			case EPCS_TOTAL_LENTH_ADDR		: epcs_total_lenth_rg = epcs_area->data; dbg_printf("[EPCS] Set length -> %x \n\r", epcs_total_lenth_rg);
 											  break;
 
-			case EPCS_COMMANDS_ADDR    		: epcs_cmd_rg = epcs_area->data; dbg_printf("EPCS_SET_CMD -> %x \n",epcs_cmd_rg );
+			case EPCS_COMMANDS_ADDR    		: epcs_cmd_rg = epcs_area->data; dbg_printf("[EPCS] Set command -> %x \n\r",epcs_cmd_rg );
 											  epcs_run_cmd();
 											  break;
 
@@ -87,7 +87,7 @@ void epcs_read_flash_id(void)
 											 	EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET);
 
 	UartCmd_Send_SW_reg_val(EPCS_ID_ADDR,epcs_id_rg);
-	dbg_putstr("EPCS_READ_ID\n");
+	dbg_printf("[EPCS] Read Flash ID -> %x\n\r",epcs_id_rg);
 }
 
 ///
@@ -107,7 +107,7 @@ alt_u8 epcs_run_cmd(void)
 							  epcs_start_address_rg,
 							  0x0);
 			epcs_cmd_rg = EPCS_CMD_NULL;
-			 dbg_putstr("EPCS_SECTOR_ERASE\n");
+			dbg_printf("[EPCS] SECTOR ERASE \n\r");
 			break;
 
 		case EPCS_CMD_UPDATE_FIRMWARE	: g_EPCS_STATE = EPCS_STATE_WRITE_FW; break;
@@ -137,7 +137,7 @@ alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len)
 
 	if(n_bytes == 0 || epcs_start_address_rg < EPCS_APL_BOOT_ADDR)
 	{
-		dbg_putstr("EPCS_ERR\n");
+		dbg_printf("[EPCS] Error \n\r");
 		return(EPCS_ERR);
 	}
 	else
@@ -180,10 +180,16 @@ alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len)
 			{
 				epcs_cmd_rg = EPCS_CMD_NULL;
 				g_EPCS_STATE = EPCS_STATE_IDLE;
+				dbg_printf("[EPCS] Bytes written -> %x \n\r", total_bytes);
+				dbg_printf("[EPCS] Wire done \n\r");
+				total_bytes = 0;
+			}
+			else
+			{
+				dbg_printf("[EPCS] Bytes written -> %x \n\r", total_bytes);
 			}
 
-			dbg_printf("EPCS_WRITE_DATA -> %x \n", total_bytes);
-			total_bytes = 0;
+
 			return(EPCS_OK);
 	}
 
@@ -214,14 +220,16 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 			src_data++;
 			rd_buf_xp++;
 		}
+
+		dbg_printf("[EPCS] Read data: start address -> %x; Len - > %x \n\r", epcs_start_address_rg,1024);
 		epcs_start_address_rg +=1024;
 		epcs_total_lenth_rg -= 1024;
-		dbg_putstr("EPCS_READ_DATA\n");
 
 		if(epcs_total_lenth_rg == 0)
 		{
 			epcs_cmd_rg = EPCS_CMD_NULL;
 			g_EPCS_STATE = EPCS_STATE_IDLE;
+			dbg_printf("[EPCS] Read Done \n\r");
 		}
 		return(1024);
 	}
@@ -238,12 +246,13 @@ alt_u32 epcs_read_fw(alt_u8*  src_data)
 					*src_data = BitReverseTable256[rd_buf[i]];
 					src_data++;
 				}
+				dbg_printf("[EPCS] Read data: start address -> %x Len - > \n\r", epcs_start_address_rg,epcs_total_lenth_rg);
 				last_len = epcs_total_lenth_rg;
 				epcs_start_address_rg+=last_len;
 				epcs_total_lenth_rg = 0;
 				epcs_cmd_rg = EPCS_CMD_NULL;
 				g_EPCS_STATE = EPCS_STATE_IDLE;
-				dbg_putstr("EPCS_READ_DATA\n");
+				dbg_printf("[EPCS] Read Done \n\r");
 				return(last_len);
 	}
 	else 	return(0);

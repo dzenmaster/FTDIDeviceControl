@@ -23,17 +23,17 @@ void RsuInit (alt_u8 CurImage) // 0xF - factory; 0xA - application
 
 	// Turn off watchdog
 	// It is working only in factory mode!!
-	  IOWR_32DIRECT(RSU_CYCLONE5_0_BASE, WatchDogAddr,WD_Disable);
+	IOWR_32DIRECT(RSU_CYCLONE5_0_BASE, WatchDogAddr,WD_Disable);
 	//Read Reconfiguration Source; Current State Contents in Status Register
 	res = IORD_32DIRECT(RSU_CYCLONE5_0_BASE, ReconfigSrcAddr);
 	if(res == 0 && CurImage == 0xF){ // we are in factory mode
-		dbg_printf("[RSU] Reconfiguration Source -> %x \n",res);
+		dbg_printf("[RSU] Reconfiguration Source -> %x \n\r",res);
 		// Previous State Register 1 Contents in Status Register
 		PrevStateReg1 = IORD_32DIRECT(RSU_CYCLONE5_0_BASE, PrevStateReg1Addr);
-		dbg_printf("[RSU] PreviousState 1  -> %x \n",PrevStateReg1);
+		dbg_printf("[RSU] PreviousState 1  -> %x \n\r",PrevStateReg1);
 		// Previous State Register 2 Contents in Status Register
 		PrevStateReg2 = IORD_32DIRECT(RSU_CYCLONE5_0_BASE, PrevStateReg2Addr);
-		dbg_printf("[RSU] PreviousState 2  -> %x \n",PrevStateReg2);
+		dbg_printf("[RSU] PreviousState 2  -> %x \n\r",PrevStateReg2);
 
 		if(PrevStateReg1 == 0 && PrevStateReg2 == 0) // Power Up, Let's try to jump to application
 		{ IOWR_32DIRECT(RSU_CYCLONE5_0_BASE, WatchDogAddr,WD_Disable);
@@ -41,9 +41,9 @@ void RsuInit (alt_u8 CurImage) // 0xF - factory; 0xA - application
 			IOWR_32DIRECT(RSU_CYCLONE5_0_BASE, BootAddrAddr,EPCS_APL_BOOT_ADDR);
 			// Read back boot address
 			res = IORD_32DIRECT(RSU_CYCLONE5_0_BASE, ReadBackBootAddrAddr1);
-			dbg_printf("[RSU] Past Boot ADDR1 -> %x \n",res);
+			dbg_printf("[RSU] Past Boot ADDR1 -> %x \n\r",res);
 			res = IORD_32DIRECT(RSU_CYCLONE5_0_BASE, ReadBackBootAddrAddr2);
-			dbg_printf("[RSU] Past Boot ADDR2 -> %x \n",res);
+			dbg_printf("[RSU] Past Boot ADDR2 -> %x \n\r",res);
 
 			// Turn on watchdog
 			IOWR_32DIRECT(RSU_CYCLONE5_0_BASE, WatchDogAddr,WD_Enable);
@@ -55,30 +55,30 @@ void RsuInit (alt_u8 CurImage) // 0xF - factory; 0xA - application
 		else
 		{
 			if((PrevStateReg1 & 0x1) == 0x1 || (PrevStateReg2 & 0x1) == 0x1)
-				dbg_putstr("[RSU] Configuration reset triggered from logic array\n");
+				dbg_printf("[RSU] Configuration reset triggered from logic array\n\r");
 
 			if(((PrevStateReg1 & 0x2) >> 1) == 0x1 || ((PrevStateReg2 & 0x2) >> 1) == 0x1)
-				dbg_putstr("[RSU] User watchdog timer timeout\n");
+				dbg_printf("[RSU] User watchdog timer timeout\n\r");
 
 			if(((PrevStateReg1 & 0x4) >> 2) == 0x1 || ((PrevStateReg2 & 0x4) >> 2) == 0x1)
-				dbg_putstr("[RSU] nstatus asserted by an external device as the result of an error\n");
+				dbg_printf("[RSU] nstatus asserted by an external device as the result of an error\n\r");
 
 			if(((PrevStateReg1 & 0x8) >> 3) == 0x1 || ((PrevStateReg2 & 0x8) >> 3) == 0x1)
-				dbg_putstr("[RSU] CRC error during application configuration\n");
+				dbg_printf("[RSU] CRC error during application configuration\n\r");
 
 			if(((PrevStateReg1 & 0x10) >> 4) == 0x1 || ((PrevStateReg2 & 0x10) >> 4) == 0x1)
-				dbg_putstr("[RSU] External configuration reset (nconfig) assertion\n");
+				dbg_printf("[RSU] External configuration reset (nconfig) assertion\n\r");
 		}
 	}
 	else
 	{
-		dbg_printf("[RSU] PreviousState 1  -> %x \n",PrevStateReg1);
-		dbg_printf("[RSU] PreviousState 2  -> %x \n",PrevStateReg2);
+		dbg_printf("[RSU] PreviousState 1  -> %x \n\r",PrevStateReg1);
+		dbg_printf("[RSU] PreviousState 2  -> %x \n\r",PrevStateReg2);
 
 
 	}
 	res = IORD_32DIRECT(RSU_CYCLONE5_0_BASE, ReconfigSrcAddr);
-	dbg_printf("[RSU] Current Image -> %x \n",res);
+	dbg_printf("[RSU] Current Image -> %x \n\r",res);
 
 }
 

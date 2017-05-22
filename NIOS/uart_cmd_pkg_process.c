@@ -115,6 +115,7 @@ void process_epcs_flash(alt_u8 sate)
 				{
 					send_response_packet(NIOS_CMD_EPCS_READ_ERR);
 					g_EPCS_STATE = EPCS_STATE_IDLE;
+					dbg_printf("[EPCS] Read ERR\n\r");
 				}
 
 			}

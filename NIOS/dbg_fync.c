@@ -106,6 +106,7 @@ void dbg_printf(const char *fmt, ...)
 }
 #endif
 
+#ifdef terminal
 
 void dbg_printf(const char *fmt, ...)
 {
@@ -115,7 +116,10 @@ void dbg_printf(const char *fmt, ...)
     const char *w;
     char c;
     char buf[1024];
-    int i;
+    alt_u16 i;
+    alt_u16 tx_cnt;
+    tx_cnt =0;
+    i = 0;
 
     /* Process format string. */
     w = fmt;
@@ -126,7 +130,8 @@ void dbg_printf(const char *fmt, ...)
         if (c != '%')
         {
            // alt_putchar(c);
-        	UartCmd_WRITE_FIFO_TX_DATA(c);
+        	buf[i] = c;
+        	i++;
         }
         else
         {
@@ -138,14 +143,16 @@ void dbg_printf(const char *fmt, ...)
                 {
                     /* Process "%" escape sequence. */
                     //alt_putchar(c);
-                	UartCmd_WRITE_FIFO_TX_DATA(c);
+                	buf[i] =c;
+                	i++;
 
                 }
                 else if (c == 'c')
                 {
                     int v = va_arg(args, int);
                     //alt_putchar(v);
-                    UartCmd_WRITE_FIFO_TX_DATA(v);
+                    buf[i] =v;
+                    i++;
                 }
                 else if (c == 'x')
                 {
@@ -158,7 +165,8 @@ void dbg_printf(const char *fmt, ...)
                     if (v == 0)
                     {
                         //alt_putchar('0');
-                        UartCmd_WRITE_FIFO_TX_DATA('0');
+                    	buf[i] ='0';
+                    	i++;
                         continue;
                     }
 
@@ -176,7 +184,8 @@ void dbg_printf(const char *fmt, ...)
                         else
                             c = 'a' + digit - 10;
                         //alt_putchar(c);
-                        UartCmd_WRITE_FIFO_TX_DATA(c);
+                        buf[i] =c;
+                        i++;
                     }
                 }
                 else if (c == 's')
@@ -186,7 +195,8 @@ void dbg_printf(const char *fmt, ...)
 
                     while(*s)
                       //alt_putchar(*s++);
-                    	UartCmd_WRITE_FIFO_TX_DATA(*s++);
+                    	buf[i] = *s++;
+                    i++;
                 }
             }
             else
@@ -196,8 +206,22 @@ void dbg_printf(const char *fmt, ...)
         }
     }
 
-}
+    UartCmd_Sync_Bytes();
 
+	// Package type "ASCII Print"
+	UartCmd_WRITE_FIFO_TX_DATA(UartPkgType_ASCII);
+	// Lengths of packet = 2 bytes
+	UartCmd_WRITE_FIFO_TX_DATA(i);
+	UartCmd_WRITE_FIFO_TX_DATA(i>>8);
+
+	while(tx_cnt != i)
+	{
+		UartCmd_WRITE_FIFO_TX_DATA(buf[tx_cnt]);
+		tx_cnt++;
+	}
+
+}
+#endif
 ///
 
 

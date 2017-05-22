@@ -87,6 +87,7 @@
 #include "epcs_flash.h"
 #include "RSU.h"
 
+#define		CurImage  0xF// 0xF or 0xA
 
 
 #define		AVS_READ_SATATUS_ADDR	  		0x0 << 2
@@ -109,31 +110,38 @@ alt_u8 state = 0;
 
 int main()
 { 
-	dbg_printf("Hello from Nios II!\n\r");
-//  epcs_read_buffer(EPCS_FLASH_CONTROLLER_0_BASE+ EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET, 0x0,&rd_data, 1024,0x0);
-  /* Event loop never exits. */
-	RsuInit(0xF);
+	if(CurImage == 0xF)
+		dbg_printf("Hello from Factory!\n\r");
+	else
+		dbg_printf("Hello from Application!\n\r");
+
+	UartCmd_Send_Module_type(0x1);
+	UartCmd_Send_SN(0x2);
+	UartCmd_Send_FirmWare_revision(0x3);
+	UartCmd_Send_SoftWare_revision(CurImage);
+
+	RsuInit(CurImage);
  while (1)
   {
 	do
 	 {
-		RsuWdReset();
+		 RsuWdReset();
 		 uart_status = UartCmd_GET_STATUS();
 		 if((uart_status & 0x2)>>1)
 		 {
-			 dbg_putstr("Timeout has been occurred!\n");
+			 dbg_printf("[UART] Timeout has been occurred!\n\r");
 			 send_response_packet(NIOS_CMD_TIMEOUT_OCCURRED);
 		 }
 
 		 if((uart_status & 0x4)>>2)
 		 {
-			 dbg_putstr("Wrong Sync Word!\n");
+			 dbg_printf("[UART] Wrong Sync Word!\n\r");
 			 send_response_packet(NIOS_CMD_WRONG_SYNC);
 		 }
 
 		 if((uart_status & 0x8)>>3)
 		 {
-			 dbg_putstr("Write to RX FIFO ERROR!\n");
+			 dbg_printf("[UART] Write to RX FIFO ERROR!\n\r");
 
 		 }
 	 }
@@ -157,14 +165,14 @@ int main()
 	 	 	 	 	 	}
 	 	 	 	 	 else
 					 {
-	 	 	 	 		dbg_putstr("UnProcessed Packet\n");
+	 	 	 	 		dbg_printf("[PKG] UnProcessed Packet\n\r");
 
 	 	 	 	 		 // here EPCS write parameters data
 					 }
 	 		 	 	break;
 	 	default:
 	 	{
-	 		dbg_putstr("Unknown Packet Type\n");
+	 		dbg_printf("[PKG] Unknown Packet Type\n\r");
 	 		send_response_packet(NIOS_CMD_UNKN_PKG_TYPE);
 	 	}
 	 }

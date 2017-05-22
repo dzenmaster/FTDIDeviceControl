@@ -24,6 +24,8 @@
 #define		UART_CMD_SYNC_0 	0xA5
 #define		UART_CMD_SYNC_1 	0x5A
 
+#define		UartPkgType_ASCII 	0x02
+
 ///
 
 #define		UART_CMD_INFO_MODULE_TYPE_ADDR 	0x0
