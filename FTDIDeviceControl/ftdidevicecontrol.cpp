@@ -239,7 +239,9 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 		memcpy(tStr, aData, aLen);
 		tStr[aLen] = 0;
 		QString tQStr = tStr;
-		ui.teModuleMessages->append(tStr);
+		ui.teModuleMessages->moveCursor (QTextCursor::End);
+		ui.teModuleMessages->insertPlainText(tStr);
+		QApplication::processEvents();
 	}
 	if (aType==3) {//read from SW
 		//0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
