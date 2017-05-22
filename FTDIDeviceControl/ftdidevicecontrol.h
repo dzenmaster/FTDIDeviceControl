@@ -59,6 +59,7 @@ private:
 	void fillDeviceList();
 	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
 	bool setRbfFileName(const QString&);
+	void toLog(const QString& logStr);
 
 private slots:
 	void slShowTerminal(bool);
@@ -67,7 +68,7 @@ private slots:
 	void addDataToTE(const QString& str);
 	void slOpen();
 	void slClose();
-	void slGetInfo();
+	bool slGetInfo();
 	void slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData);
 	bool slBrowseRBF();
 	bool slWriteFlash();

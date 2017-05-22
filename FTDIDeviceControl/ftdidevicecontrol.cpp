@@ -32,6 +32,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbClose, SIGNAL(clicked()), SLOT(slClose()));
 	connect(ui.pbGetInfo, SIGNAL(clicked()), SLOT(slGetInfo()));
 	connect(ui.pbClear, SIGNAL(clicked()), ui.teReceive, SLOT(clear()));
+	connect(ui.pbClear, SIGNAL(clicked()),  ui.teModuleMessages, SLOT(clear()));
 	connect(ui.pbBrowseRBF, SIGNAL(clicked()), SLOT(slBrowseRBF()));
 	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
 	connect(ui.pbReadFlashID, SIGNAL(clicked()), SLOT(slReadFlashID()));
@@ -191,25 +192,27 @@ void FTDIDeviceControl::slClose()
 	closePort();
 }
 
-void FTDIDeviceControl::slGetInfo()
+bool FTDIDeviceControl::slGetInfo()
 {
 	if (!m_mtx.tryLock())
-		return;
+		return false;
 
 	bool tResult = true;
 	for (unsigned char nc=0; nc < 4; ++nc){
 		if (sendPacket(PKG_TYPE_INFO, 1, REG_RD, nc)!=0)	{
 			ui.teReceive->append("error : " + m_lastErrorStr);		
 			tResult = false;
+			break;
 		}		
 	}	
 	ui.widget_3->setEnabled(tResult);
 	m_mtx.unlock();
+	return tResult;
 }
 
 void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData)
 {
-	if ((!aData)||(!aLen))
+	if ((!aData)||(!aLen)||(aLen>2048))
 		return;
 	if (aType==0) {
 		unsigned char tID = aData[0];
@@ -230,6 +233,13 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 	}
 	if (aType==1) {
 		//error
+	}
+	if (aType==2) {
+		char* tStr = new char[aLen+1];
+		memcpy(tStr, aData, aLen);
+		tStr[aLen] = 0;
+		QString tQStr = tStr;
+		ui.teModuleMessages->append(tStr);
 	}
 	if (aType==3) {//read from SW
 		//0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
@@ -649,33 +659,39 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 }
 
 void FTDIDeviceControl::slUpdateFirmware()
-{
-
+{	
 	if (!slBrowseRBF()){	
 		QMessageBox::critical(0,"Open RBF error","Open RBF  error");
 		return;
 	}
 	ui.tabWidget->setCurrentIndex(1);
+	ui.statusBar->showMessage("Read Flash ID");
 	if (!slReadFlashID()){	
 		QMessageBox::critical(0,"ReadFlashID error","ReadFlashID error");
 		return;
 	}
+	ui.statusBar->showMessage("Erase Flash");
 	if (!slEraseFlash()){	
 		QMessageBox::critical(0,"EraseFlash error","EraseFlash error");
 		return;
 	}
+	ui.statusBar->showMessage("Write Length");
 	if (!slWriteLength()){	
 		QMessageBox::critical(0,"WriteLength error","WriteLength error");
 		return;
 	}
+	ui.statusBar->showMessage("Write Cmd Update Firmware");
 	if (!slWriteCmdUpdateFirmware()){	
 		QMessageBox::critical(0,"WriteCmdUpdateFirmware error","WriteCmdUpdateFirmware error");
 		return;
 	}
+	ui.statusBar->showMessage("Write Flash Firmware");
 	if (!slWriteFlash()){	
 		QMessageBox::critical(0,"WriteFlash error","WriteFlash error");
 		return;
 	}
+	ui.statusBar->showMessage("Updated successful");
+	QMessageBox::information(0, "Updated successful", "Updated successful");
 }
 
 void FTDIDeviceControl::slConnectToDevice()
@@ -683,8 +699,24 @@ void FTDIDeviceControl::slConnectToDevice()
 	bool tResult = false;
 	if (ui.cbFTDIDevice->count()>0)
 		tResult = openPort(ui.cbFTDIDevice->currentIndex());
-	ui.pbUpdateFirmware->setEnabled(tResult);
-	ui.tabWidget->setEnabled(tResult);
-	if (tResult)
-		slGetInfo();
+	if (!tResult){
+		QMessageBox::critical(0,"Open error","Open error");
+		return;
+	}
+	ui.pbUpdateFirmware->setEnabled(true);
+	ui.tabWidget->setEnabled(true);
+	if (slGetInfo()){
+		ui.statusBar->showMessage("Connected successful");
+		QMessageBox::information(0, "Connected successful", "Connected successful");
+
+	}
+	else{
+		ui.statusBar->showMessage("Connection error");
+		QMessageBox::critical(0,"Connection error","Connection error");
+	}
+}
+
+void FTDIDeviceControl::toLog(const QString& logStr)
+{
+//teLog
 }
