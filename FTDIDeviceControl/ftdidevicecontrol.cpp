@@ -10,7 +10,7 @@
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
-	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),m_inputLength(0),m_readBytes(0),m_inputFile(0)
+	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0)
 {
 	ui.setupUi(this);
 	
@@ -36,6 +36,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbBrowseRBF, SIGNAL(clicked()), SLOT(slBrowseRBF()));
 	connect(ui.pbWriteFlash, SIGNAL(clicked()), SLOT(slWriteFlash()));
 	connect(ui.pbReadFlashID, SIGNAL(clicked()), SLOT(slReadFlashID()));
+	connect(ui.pbReadStartAddress, SIGNAL(clicked()), SLOT(slReadStartAddress()));
 	connect(ui.pbEraseFlash, SIGNAL(clicked()), SLOT(slEraseFlash()));
 	connect(ui.pbWriteCmdUpdateFirmware, SIGNAL(clicked()), SLOT(slWriteCmdUpdateFirmware()));
 	connect(ui.pbWriteLength, SIGNAL(clicked()), SLOT(slWriteLength()));
@@ -259,6 +260,10 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 				m_inputLength = *((quint32*)&aData[3]);				
 				ui.teReceive->append(QString("r2 = %1\n").arg(m_inputLength));
 			}
+			else if (swAddr==4){
+				m_startAddr =  *((quint32*)&aData[3]);				
+				ui.teReceive->append(QString("Start Address = %1\n").arg(m_startAddr));
+			}
 		}
 		// a5 5a 03 |07 00|01|03 00| XX XX XX XX
 	}
@@ -456,6 +461,23 @@ bool FTDIDeviceControl::slReadFlashID()
 	return true;
 }
 
+bool FTDIDeviceControl::slReadStartAddress()
+{
+	if (!m_mtx.tryLock())
+		return false;
+
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 4)!=0)	{
+		m_mtx.unlock();
+		ui.teReceive->append("error : " + m_lastErrorStr);		
+		return false;
+	}
+	Sleep(200);
+
+
+	m_mtx.unlock();
+	return true;
+}
+
 bool FTDIDeviceControl::slEraseFlash()
 {
 	// a5 5a 03 03 00 01 00 00
@@ -494,7 +516,7 @@ bool FTDIDeviceControl::slEraseFlash()
 	DWORD ret;	
 
 	for (unsigned char i = 0; i < 13; ++i) {	
-		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x10000)!=0)	{
+		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x10000 + m_startAddr)!=0)	{
 			ui.teReceive->append("error : " + m_lastErrorStr);
 			break;
 		}		
@@ -505,7 +527,7 @@ bool FTDIDeviceControl::slEraseFlash()
 		QApplication::processEvents();
 	}	
 	//back address
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, 0x00)!=0)	{
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, m_startAddr)!=0)	{
 		ui.teReceive->append("error : " + m_lastErrorStr);	
 		setEnabled(true);
 		m_mtx.unlock();
@@ -670,6 +692,11 @@ void FTDIDeviceControl::slUpdateFirmware()
 	ui.statusBar->showMessage("Read Flash ID");
 	if (!slReadFlashID()){	
 		QMessageBox::critical(0,"ReadFlashID error","ReadFlashID error");
+		return;
+	}
+	ui.statusBar->showMessage("Read Start Address");
+	if (!slReadStartAddress()){	
+		QMessageBox::critical(0,"Read Start Address error","Read Start Address error");
 		return;
 	}
 	ui.statusBar->showMessage("Erase Flash");

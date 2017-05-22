@@ -50,6 +50,7 @@ private:
 	unsigned char m_buff[2048];
 	QString m_rbfFileName;
 	QString m_lastErrorStr;
+	quint32 m_startAddr;
 
 
 	bool openPort(int aNum);
@@ -73,6 +74,7 @@ private slots:
 	bool slBrowseRBF();
 	bool slWriteFlash();
 	bool slReadFlashID();
+	bool slReadStartAddress();
 	bool slEraseFlash();
 	bool slWriteLength();
 	bool slWriteCmdUpdateFirmware();

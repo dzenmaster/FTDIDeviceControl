@@ -49,7 +49,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>4</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -173,9 +173,9 @@
         </property>
         <property name="geometry">
          <rect>
-          <x>20</x>
-          <y>120</y>
-          <width>531</width>
+          <x>70</x>
+          <y>130</y>
+          <width>661</width>
           <height>41</height>
          </rect>
         </property>
@@ -185,7 +185,7 @@
          </property>
          <property name="geometry">
           <rect>
-           <x>430</x>
+           <x>570</x>
            <y>10</y>
            <width>75</width>
            <height>23</height>
@@ -211,7 +211,7 @@
         <widget class="QPushButton" name="pbEraseFlash">
          <property name="geometry">
           <rect>
-           <x>130</x>
+           <x>290</x>
            <y>10</y>
            <width>75</width>
            <height>23</height>
@@ -224,7 +224,7 @@
         <widget class="QPushButton" name="pbWriteLength">
          <property name="geometry">
           <rect>
-           <x>220</x>
+           <x>370</x>
            <y>10</y>
            <width>75</width>
            <height>23</height>
@@ -237,7 +237,7 @@
         <widget class="QPushButton" name="pbWriteCmdUpdateFirmware">
          <property name="geometry">
           <rect>
-           <x>320</x>
+           <x>450</x>
            <y>10</y>
            <width>101</width>
            <height>23</height>
@@ -245,6 +245,19 @@
          </property>
          <property name="text">
           <string>UpdateFirmware</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="pbReadStartAddress">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>10</y>
+           <width>111</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Read Start Addr</string>
          </property>
         </widget>
        </widget>
