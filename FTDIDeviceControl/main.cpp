@@ -3,6 +3,9 @@
 #include <QSystemSemaphore>
 #include <QSharedMemory>
 #include <QMessageBox>
+#include <QTextCodec>
+
+QString LOGPath;
 
 int main(int argc, char *argv[])
 {
@@ -23,6 +26,14 @@ int main(int argc, char *argv[])
 		isRunning = false;
 	}
 	sema.release();	
+
+	char* basePathChar = new char[2048];
+	qstrncpy(basePathChar,argv[0],2047);
+	char* pp = strrchr(basePathChar,'\\');
+	(pp) ?	*(pp+1)=0 :	basePathChar[0]=0;
+	QTextCodec* codec = QTextCodec::codecForName("Windows-1251");
+	QString basePath = codec->toUnicode(basePathChar);
+	LOGPath = basePath +"LOG\\";
 
 	QApplication a(argc, argv);
 

@@ -1,5 +1,7 @@
-#include "ftdidevicecontrol.h"
+#define NOMINMAX
 
+#include "ftdidevicecontrol.h"
+#include <QDateTime>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -9,11 +11,16 @@
 
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
+extern QString LOGPath;
+
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0)
 {
+	clearLogs();
 	ui.setupUi(this);
-	
+
+
+
 	ui.lModule->hide();
 	ui.cbModule->hide();
 	
@@ -747,9 +754,23 @@ void FTDIDeviceControl::slConnectToDevice()
 	}
 }
 
-void FTDIDeviceControl::toLog(const QString& logStr)
-{
-//teLog
+void FTDIDeviceControl::clearLogs()
+{	//почистим логи
+	QDir logDir(LOGPath);
+	QFileInfoList fiList = logDir.entryInfoList();
+	QFileInfoList::iterator i = fiList.begin();
+	int deletedFiles=0;
+	while(i!=fiList.end()) {
+		qint64 dt = (*i).lastModified().daysTo(QDateTime::currentDateTime());
+		if (dt>20){ // cтарше 20 дней чистим
+			if (QFile::remove((*i).absoluteFilePath()))
+				deletedFiles++;
+		}
+		++i;
+	}
+	if (deletedFiles){
+		ui.teJournal->addMessage("",QString("Удалено %1 файлов из каталога LOG").arg(deletedFiles));
+	}	
 }
 
 bool FTDIDeviceControl::slJumpToFact()

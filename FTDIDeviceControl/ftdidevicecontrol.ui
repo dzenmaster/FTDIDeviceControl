@@ -237,7 +237,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -720,7 +720,7 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QTextEdit" name="teLog">
+         <widget class="CJournal" name="teJournal">
           <property name="readOnly">
            <bool>true</bool>
           </property>
@@ -735,6 +735,13 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>CJournal</class>
+   <extends>QTextEdit</extends>
+   <header>Journal.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="ftdidevicecontrol.qrc"/>
  </resources>
