@@ -692,7 +692,6 @@ void FTDIDeviceControl::slUpdateFirmware()
 			return;
 		}
 	}
-	ui.tabWidget->setCurrentIndex(1);
 	ui.statusBar->showMessage("Read Flash ID");
 	if (!slReadFlashID()){	
 		QMessageBox::critical(0,"ReadFlashID error","ReadFlashID error");
