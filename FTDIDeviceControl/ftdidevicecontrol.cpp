@@ -257,6 +257,7 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 				if (aData[0]!=0)
 					ui.teJournal->addMessage("slNewKadr", QString("Got Error Kadr %1").arg(aData[0]), 1);
 			}
+			break;
 	case 2: {
 				char* tStr = new char[aLen+1];
 				memcpy(tStr, aData, aLen);
@@ -264,7 +265,7 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 				QString tQStr = tStr;
 				ui.teModuleMessages->moveCursor (QTextCursor::End);
 				ui.teModuleMessages->insertPlainText(tQStr);
-				ui.teJournal->addMessage("slNewKadr", QString("[len = %1] Ascii message from module : ").arg(aLen) + tQStr);
+				ui.teJournal->addMessage("slNewKadr", QString("Ascii message from module : ").arg(aLen) + tQStr);
 				QApplication::processEvents();
 			}
 			break;
