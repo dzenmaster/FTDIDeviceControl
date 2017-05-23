@@ -51,6 +51,7 @@ private:
 	QString m_rbfFileName;
 	QString m_lastErrorStr;
 	quint32 m_startAddr;
+	quint32 m_R3;
 
 
 	bool openPort(int aNum);
@@ -61,7 +62,7 @@ private:
 	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
 	bool setRbfFileName(const QString&);
 	void toLog(const QString& logStr);
-	void clearLogs();
+
 
 private slots:
 	void slShowTerminal(bool);

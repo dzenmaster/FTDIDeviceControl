@@ -11,15 +11,10 @@
 
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
-extern QString LOGPath;
-
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0)
 {
-	clearLogs();
 	ui.setupUi(this);
-
-
 
 	ui.lModule->hide();
 	ui.cbModule->hide();
@@ -33,8 +28,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	m_buff[0]=0xA5;
 	m_buff[1]=0x5A;
 	memset(&m_buff[2], 0, 2046);
-	connect(ui.cbShowTerminal, SIGNAL(toggled(bool)), SLOT(slShowTerminal(bool)));	
 
+	connect(ui.cbShowTerminal, SIGNAL(toggled(bool)), SLOT(slShowTerminal(bool)));	
 	connect(ui.pbSend, SIGNAL(clicked()), SLOT(slSend()));
 	connect(ui.pbOpen, SIGNAL(clicked()), SLOT(slOpen()));
 	connect(ui.pbClose, SIGNAL(clicked()), SLOT(slClose()));
@@ -89,6 +84,7 @@ void FTDIDeviceControl::fillDeviceList()
 	void * p1 = (void*)&numDevs;				
 	ftStatus = FT_ListDevices(p1, NULL, FT_LIST_NUMBER_ONLY);	
 	if ((ftStatus == FT_OK)&&(numDevs>0)) {
+		ui.teJournal->addMessage("fillDeviceList",QString("Found %1 devices").arg(numDevs));
 		if (numDevs>9)
 			numDevs = 9;
 		char *BufPtrs[10];   // pointer to array of 10 pointers 
@@ -108,7 +104,8 @@ void FTDIDeviceControl::fillDeviceList()
 			delete BufPtrs[i];
 	}
 	else {
-		QMessageBox::critical(this,"no devs","no devices connected");	
+		ui.teJournal->addMessage("fillDeviceList","No connected devices", 1);
+		QMessageBox::critical(this,"No connected devices","No connected devices");			
 	}
 }
 
@@ -118,26 +115,30 @@ bool FTDIDeviceControl::openPort(int aNum)
 	FT_STATUS ftStatus = FT_OK;
 	ftStatus = FT_Open(aNum, &m_handle);
 	if (ftStatus!=FT_OK){
+		ui.teJournal->addMessage("openPort","FT_Open error", 1);
 		QMessageBox::critical(this, "FT_Open error", "FT_Open error");
 		return false;
 	}
 	ftStatus = FT_SetEventNotification(m_handle, FT_EVENT_RXCHAR, m_hEvent);
 	if (ftStatus!=FT_OK){
+		ui.teJournal->addMessage("openPort","FT_SetEventNotification error", 1);
 		QMessageBox::critical(this, "FT_SetEventNotification error", "FT_SetEventNotification error");
 		return false;
 	}	
 	ftStatus = FT_SetBaudRate(m_handle, 115200);
 	//ftStatus = FT_SetBaudRate(m_handle, 57600);
 	if (ftStatus!=FT_OK){
+		ui.teJournal->addMessage("openPort","FT_SetBaudRate error", 1);
 		QMessageBox::critical(this, "FT_SetBaudRate error", "FT_SetBaudRate error");
 		return false;
 	}
 	ftStatus = FT_SetDataCharacteristics(m_handle, FT_BITS_8, FT_STOP_BITS_1, FT_PARITY_NONE);
 	if (ftStatus!=FT_OK) {
+		ui.teJournal->addMessage("openPort","FT_SetDataCharacteristics error", 1);
 		QMessageBox::critical(this, "FT_SetDataCharacteristics error", "FT_SetDataCharacteristics error");
 		return false;
 	}
-	ui.teReceive->append("Opened succesful\n");
+	ui.teJournal->addMessage("openPort","Opened succesful");	
 	m_waitingThread = new CWaitingThread(m_handle, m_hEvent);
 	connect(m_waitingThread,SIGNAL(newData(const QString& )), SLOT(addDataToTE(const QString& )));
 	connect(m_waitingThread,SIGNAL(newKadr(unsigned char, unsigned short, const unsigned char*)), SLOT(slNewKadr(unsigned char, unsigned short, const unsigned char*)));
@@ -159,6 +160,7 @@ void FTDIDeviceControl::closePort()
 	if (m_handle) {
 		FT_STATUS ftStatus = FT_Close(m_handle);
 		if (ftStatus!=FT_OK) {
+			ui.teJournal->addMessage("closePort", "FT_Close error", 1);
 			QMessageBox::critical(this, "FT_Close error", "FT_Close error");			
 		}
 		m_handle = NULL;
@@ -181,7 +183,6 @@ QByteArray FTDIDeviceControl::hexStringToByteArray(QString& aStr)
 	}
 	return ba;
 }
-
 
 
 void FTDIDeviceControl::addDataToTE(const QString& str)
@@ -210,11 +211,12 @@ bool FTDIDeviceControl::slGetInfo()
 	bool tResult = true;
 	for (unsigned char nc=0; nc < 4; ++nc){
 		if (sendPacket(PKG_TYPE_INFO, 1, REG_RD, nc)!=0)	{
-			ui.teReceive->append("error : " + m_lastErrorStr);		
+			ui.teJournal->addMessage("slGetInfo", "error : " + m_lastErrorStr, 1);			
 			tResult = false;
 			break;
 		}		
 	}	
+	ui.teJournal->addMessage("slGetInfo", QString("Result: %1").arg(tResult), tResult ? 0 : 1);
 	ui.widget_3->setEnabled(tResult);
 	m_mtx.unlock();
 	return tResult;
@@ -222,74 +224,96 @@ bool FTDIDeviceControl::slGetInfo()
 
 void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData)
 {
-	if ((!aData)||(!aLen)||(aLen>2048))
+	if ((!aData)||(!aLen)||(aLen>2048)){
+		ui.teJournal->addMessage("slNewKadr", "Wrong new kadr", 1);
 		return;
-	if (aType==0) {
-		unsigned char tID = aData[0];
-		switch (tID) {
-		case 0:
-			ui.leModuleType->setText(QString("%1").arg(aData[1]));			
-			break;
-		case 1:
-			ui.leSerialNumber->setText(QString("%1").arg(aData[1]));			
-			break;
-		case 2:
-			ui.leFirmwareVersion->setText(QString("%1").arg(aData[1]));			
-			break;
-		case 3:
-			ui.leSoftwareVersion->setText(QString("%1").arg(aData[1]));			
-			break;
-		}
 	}
-	if (aType==1) {
-		//error
-	}
-	if (aType==2) {
-		char* tStr = new char[aLen+1];
-		memcpy(tStr, aData, aLen);
-		tStr[aLen] = 0;
-		QString tQStr = tStr;
-		ui.teModuleMessages->moveCursor (QTextCursor::End);
-		ui.teModuleMessages->insertPlainText(tStr);
-		QApplication::processEvents();
-	}
-	if (aType==3) {//read from SW
-		//0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
-		if ((aLen==7)&&(aData[0]==1)) {			
-			unsigned short swAddr = ((unsigned short)aData[1]) + ((unsigned short)aData[2])*256;
-			if (swAddr==0){ // Flash ID
-				m_flashID =  *((quint32*)&aData[3]);
-				ui.leFlashID->setText(QString("%1").arg(m_flashID));
+
+	switch (aType)
+	{
+	case 0: {
+				unsigned char tID = aData[0];
+				switch (tID) {
+				case 0:
+					ui.leModuleType->setText(QString("%1").arg(aData[1]));	
+					ui.teJournal->addMessage("slNewKadr", QString("ModuleType %1").arg(aData[1]));
+					break;
+				case 1:
+					ui.leSerialNumber->setText(QString("%1").arg(aData[1]));	
+					ui.teJournal->addMessage("slNewKadr", QString("SerialNumber %1").arg(aData[1]));
+					break;
+				case 2:
+					ui.leFirmwareVersion->setText(QString("%1").arg(aData[1]));	
+					ui.teJournal->addMessage("slNewKadr", QString("FirmwareVersion %1").arg(aData[1]));
+					break;
+				case 3:
+					ui.leSoftwareVersion->setText(QString("%1").arg(aData[1]));	
+					ui.teJournal->addMessage("slNewKadr", QString("SoftwareVersion %1").arg(aData[1]));
+					break;
 			}
-			else if (swAddr==3){ // 
-				quint32 r3 = *((quint32*)&aData[3]);				
-				ui.teReceive->append(QString("r3 = %1\n").arg(r3));
+			break;
 			}
-			else if (swAddr==2){ // len
-				m_inputLength = *((quint32*)&aData[3]);				
-				ui.teReceive->append(QString("r2 = %1\n").arg(m_inputLength));
+	case 1: {//error
+				ui.teJournal->addMessage("slNewKadr", QString("Got Error Kadr %1").arg(aData[0]), 1);
 			}
-			else if (swAddr==4){
-				m_startAddr =  *((quint32*)&aData[3]);				
-				ui.teReceive->append(QString("Start Address = %1\n").arg(m_startAddr));
+	case 2: {
+				char* tStr = new char[aLen+1];
+				memcpy(tStr, aData, aLen);
+				tStr[aLen] = 0;
+				QString tQStr = tStr;
+				ui.teModuleMessages->moveCursor (QTextCursor::End);
+				ui.teModuleMessages->insertPlainText(tStr);
+				ui.teJournal->addMessage("slNewKadr", QString("Ascii message from module : ") + tStr);
+				QApplication::processEvents();
 			}
-		}
-		// a5 5a 03 |07 00|01|03 00| XX XX XX XX
-	}
-	if (aType==4) {
-		if (m_inputFile) {			
-			m_inputFile->write((const char*)aData, aLen);
-			m_readBytes+=aLen;
-			ui.progressBarRBF->setValue((m_readBytes*100)/m_inputLength);	
-			QApplication::processEvents();
-			if (m_inputLength<=m_readBytes) {
-				if (m_inputFile->isOpen())
-					m_inputFile->close();
-					delete m_inputFile;
-				m_inputFile = 0;
-				QMessageBox::information(this, "finished", "finished");
+			break;
+	case 3:  {//read from SW
+				//0xa5 0x5a 0x3 0x7 0x0 0x1 0x0 0x0 0x16 0x0 0x0 0x0
+				if ((aLen==7)&&(aData[0]==1)) {			
+					unsigned short swAddr = ((unsigned short)aData[1]) + ((unsigned short)aData[2])*256;
+					if (swAddr==0){ // Flash ID
+						m_flashID =  *((quint32*)&aData[3]);
+						//ui.leFlashID->setText(QString("%1").arg(m_flashID));
+						ui.teJournal->addMessage("slNewKadr", QString("Flash ID %1").arg(m_flashID));
+					}
+					else if (swAddr==3){ // 
+						m_R3 = *((quint32*)&aData[3]);				
+						//ui.teReceive->append(QString("r3 = %1\n").arg(r3));
+						ui.teJournal->addMessage("slNewKadr", QString("R3 = %1").arg(m_R3));
+					}
+					else if (swAddr==2){ // len
+						m_inputLength = *((quint32*)&aData[3]);				
+						//ui.teReceive->append(QString("r2 = %1\n").arg(m_inputLength));
+						ui.teJournal->addMessage("slNewKadr", QString("R2 inputLength = %1").arg(m_inputLength));
+					}
+					else if (swAddr==4){
+						m_startAddr =  *((quint32*)&aData[3]);				
+						//ui.teReceive->append(QString("Start Address = %1\n").arg(m_startAddr));
+						ui.teJournal->addMessage("slNewKadr", QString("Start Address = %1\n").arg(m_startAddr));
+					}
+				}
+				// a5 5a 03 |07 00|01|03 00| XX XX XX XX
+			 }
+			 break;
+	case 4: {
+				if (m_inputFile) {			
+					m_inputFile->write((const char*)aData, aLen);
+					m_readBytes+=aLen;
+					ui.progressBarRBF->setValue((m_readBytes*100)/m_inputLength);	
+					QApplication::processEvents();
+					if (m_inputLength<=m_readBytes) {
+						if (m_inputFile->isOpen())
+							m_inputFile->close();
+						delete m_inputFile;
+						m_inputFile = 0;
+						ui.teJournal->addMessage("slNewKadr", "Flash Reading is finished");
+						QMessageBox::information(this, "Flash Reading is finished", "Flash Reading is finished");
+					}
+				}
 			}
-		}
+			break;
+	default:
+		break;
 	}
 }
 
@@ -310,7 +334,6 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 bool FTDIDeviceControl::slBrowseRBF()
 {	
 	return setRbfFileName(QFileDialog::getOpenFileName(this,"Open RBF","", "RBF Files (*.rbf)"));
-
 }
 
 bool FTDIDeviceControl::setRbfFileName(const QString& fn)
@@ -321,6 +344,7 @@ bool FTDIDeviceControl::setRbfFileName(const QString& fn)
 		QFileInfo fi(m_rbfFileName);
 		ui.lSize->setText(QString("Size %1").arg(fi.size()));
 		g_Settings.setValue("rbfFileName", m_rbfFileName);
+		ui.teJournal->addMessage("setRbfFileName", m_rbfFileName);
 		return true;
 	}
 	return false;
@@ -335,18 +359,20 @@ bool FTDIDeviceControl::slWriteFlash()
 	//	| LEN |data.................. 
 
 	//ответ от модуля  0xa5 0x5a 0x1 0x1 0x0 0x0 (последний байт код ршибки) - 0x00 = PASS	
-	if(m_handle == NULL) {
+	if(m_handle == NULL) {		
 		QMessageBox::critical(this, "closed", "need to open device");
 		m_mtx.unlock();
 		return false;
 	}
 	if (m_flashID!=0x16){
+		ui.teJournal->addMessage("slWriteFlash", QString("wrong flash ID %1").arg(m_flashID), 1);
 		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
 		m_mtx.unlock();
 		return false;	
 	}
 	QString fileName = ui.lePathToRBF->text();
 	if (!QFile::exists(fileName)) {
+		ui.teJournal->addMessage("slWriteFlash", QString("file %1 doesn't exist").arg(fileName), 1);
 		QMessageBox::critical(this, "no file", "no file");
 		m_mtx.unlock();
 		return false;	
@@ -362,6 +388,7 @@ bool FTDIDeviceControl::slWriteFlash()
 
 	QFile f1(fileName);
 	if (!f1.open(QIODevice::ReadOnly))	{
+		ui.teJournal->addMessage("slWriteFlash", QString("file open error %1").arg(fileName), 1);
 		QMessageBox::critical(this, "open err", "open err");
 		ui.tabWidget->setEnabled(true);
 		m_mtx.unlock();
@@ -388,19 +415,24 @@ bool FTDIDeviceControl::slWriteFlash()
 		//ftStatus = FT_Write(m_handle, buff, 133, &ret);
 		//Sleep(200);//костыль
 		if (ftStatus!=FT_OK) {
+			ui.teJournal->addMessage("slWriteFlash", "FT_Write error", 1);
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
 		int tWTime=0;
 		int tCode=-1;
 		if (waitForPacket(tWTime, tCode)==1) {		
-			ui.teReceive->append("Wait timeout\n");
-			ui.teReceive->append(QString("write error %1 len=%2 %3 %4\n").arg(tCode).arg(nWasRead).arg(ret).arg(wasRW));
+			//ui.teReceive->append("Wait timeout\n");
+			//ui.teReceive->append(QString("write error %1 len=%2 %3 %4\n").arg(tCode).arg(nWasRead).arg(ret).arg(wasRW));
+			ui.teJournal->addMessage("slWriteFlash", "Wait timeout", 1);
+			ui.teJournal->addMessage("slWriteFlash", QString("write error %1 len=%2 %3 %4\n").arg(tCode).arg(nWasRead).arg(ret).arg(wasRW), 1);
 			break;
 		}
 		else {
-			ui.teReceive->append(QString("good Wait %1ms len=%2 %3 %4\n").arg(tWTime).arg(nWasRead).arg(ret).arg(wasRW));
+			ui.teJournal->addMessage("slWriteFlash", QString("good Wait %1ms len=%2 %3 %4\n").arg(tWTime).arg(nWasRead).arg(ret).arg(wasRW));
+			//ui.teReceive->append(QString("good Wait %1ms len=%2 %3 %4\n").arg(tWTime).arg(nWasRead).arg(ret).arg(wasRW));
 			if (tCode!=0){
-				ui.teReceive->append(QString("write error %1\n").arg(tCode));				
+				ui.teJournal->addMessage("slWriteFlash", QString("write error %1\n").arg(tCode), 1);
+				//ui.teReceive->append(QString("write error %1\n").arg(tCode));				
 				break;
 			}
 		}		
@@ -417,17 +449,26 @@ bool FTDIDeviceControl::slWriteFlash()
 	ui.progressBarRBF->setValue(100);
 	if (!tSuccsess)
 	{
-		ui.teReceive->append("Unsuccessful write\n");
+		ui.teJournal->addMessage("slWriteFlash", "Unsuccessful write", 1);
+		//ui.teReceive->append("Unsuccessful write\n");
 		ui.tabWidget->setEnabled(true);
 		QApplication::processEvents();	
 		m_mtx.unlock();
 		return false;
 	}	
-	ui.teReceive->append("Checking...\n");	
+	//ui.teReceive->append("Checking...\n");	
+	m_R3=1;
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 3)!=0)	{
+		ui.teJournal->addMessage("slWriteFlash", "error : " + m_lastErrorStr, 1);
 		ui.teReceive->append("error : " + m_lastErrorStr);	// Прочитать регистр -> addr=0x3 должно измениться значениe с 0x4 на 0х0 (NULL)	
 	}
-
+	Sleep(200);
+	if (m_R3==0){
+		ui.teJournal->addMessage("slWriteFlash", "Successful write");
+	}
+	else{
+		ui.teJournal->addMessage("slWriteFlash", "Unsuccessful write R3!=0", 1);
+	}
 	ui.tabWidget->setEnabled(true);
 	QApplication::processEvents();	
 	m_mtx.unlock();
@@ -448,6 +489,7 @@ void FTDIDeviceControl::slSend()
 		DWORD ret;
 		ftStatus = FT_Write(m_handle, ba.data(), ba.size(), &ret);	
 		if (ftStatus!=FT_OK) {
+			ui.teJournal->addMessage("slSend", "FT_Write error", 1);
 			QMessageBox::critical(this, "FT_Write error", "FT_Write error");			
 		}
 	}
@@ -462,10 +504,11 @@ bool FTDIDeviceControl::slReadFlashID()
 	
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0)!=0)	{
 		m_mtx.unlock();
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teJournal->addMessage("slReadFlashID", QString("error : ") + m_lastErrorStr, 1);
+		//ui.teReceive->append("error : " + m_lastErrorStr);		
 		return false;
 	}
-
+	ui.teJournal->addMessage("slReadFlashID", "success ");
 	m_mtx.unlock();
 	return true;
 }
@@ -477,12 +520,12 @@ bool FTDIDeviceControl::slReadStartAddress()
 
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 4)!=0)	{
 		m_mtx.unlock();
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teJournal->addMessage("slReadStartAddress", QString("error : ") + m_lastErrorStr, 1);
+		//ui.teReceive->append("error : " + m_lastErrorStr);		
 		return false;
 	}
 	Sleep(200);
-
-
+	ui.teJournal->addMessage("slReadStartAddress", "success ");
 	m_mtx.unlock();
 	return true;
 }
@@ -526,23 +569,27 @@ bool FTDIDeviceControl::slEraseFlash()
 
 	for (unsigned char i = 0; i < 13; ++i) {	
 		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x10000 + m_startAddr)!=0)	{
-			ui.teReceive->append("error : " + m_lastErrorStr);
+			//ui.teReceive->append("error : " + m_lastErrorStr);
+			ui.teJournal->addMessage("slEraseFlash", QString("error 1 : ") + m_lastErrorStr, 1);
 			break;
 		}		
 		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x03)!=0)	{
-			ui.teReceive->append("error : " + m_lastErrorStr);
+			//ui.teReceive->append("error : " + m_lastErrorStr);
+			ui.teJournal->addMessage("slEraseFlash", QString("error 3: ") + m_lastErrorStr, 1);
 			break;
-		}		
+		}	
+		ui.progressBarRBF->setValue(i*100/12);
 		QApplication::processEvents();
 	}	
 	//back address
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, m_startAddr)!=0)	{
-		ui.teReceive->append("error : " + m_lastErrorStr);	
+		//ui.teReceive->append("error : " + m_lastErrorStr);	
+		ui.teJournal->addMessage("slEraseFlash", QString("error back 1: ") + m_lastErrorStr, 1);
 		setEnabled(true);
 		m_mtx.unlock();
 		return false;
 	}
-
+	ui.teJournal->addMessage("slEraseFlash", "success ");
 	setEnabled(true);
 	m_mtx.unlock();
 	return true;
@@ -560,10 +607,12 @@ bool FTDIDeviceControl::slWriteLength()
 		sz = fi.size();
 	}
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x02, sz)!=0)	{//Записать полную длину файла
-		ui.teReceive->append("error : " + m_lastErrorStr);
+		//ui.teReceive->append("error : " + m_lastErrorStr);
+		ui.teJournal->addMessage("slWriteLength", QString("error back 1: ") + m_lastErrorStr, 1);
 		m_mtx.unlock();
 		return false;
 	}
+	ui.teJournal->addMessage("slWriteLength", "success ");
 	m_mtx.unlock();
 	return true;
 }
@@ -573,10 +622,12 @@ bool FTDIDeviceControl::slWriteCmdUpdateFirmware()
 	if (!m_mtx.tryLock())
 		return false;
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x04)!=0) { // 4. Записать в регистр команду Update Firmware 0x4  -> addr=0x3 (Дождаться пакета OK)
-		ui.teReceive->append("error : " + m_lastErrorStr);	
+		//ui.teReceive->append("error : " + m_lastErrorStr);	
+		ui.teJournal->addMessage("slWriteCmdUpdateFirmware", QString("error : ") + m_lastErrorStr, 1);
 		m_mtx.unlock();
 		return false;
 	}
+	ui.teJournal->addMessage("slWriteCmdUpdateFirmware", "success ");
 	m_mtx.unlock();
 	return true;
 }
@@ -585,13 +636,26 @@ void FTDIDeviceControl::slReadFlash()
 {	
 	if (!m_mtx.tryLock())
 		return;
+
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 4)!=0)	{
+		m_mtx.unlock();
+		ui.teJournal->addMessage("slReadFlash", QString("error : ") + m_lastErrorStr, 1);
+		//ui.teReceive->append("error : " + m_lastErrorStr);		
+		return;
+	}
+	Sleep(200);
+
+
 	
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, 0x00)!=0) { // a5 5a 03 07 00 00 01 00 00 00 00 00 -- set start epcs addr 0
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, m_startAddr)!=0) { // a5 5a 03 07 00 00 01 00 00 00 00 00 -- set start epcs addr 0
+		//ui.teReceive->append("error : " + m_lastErrorStr);	
+		ui.teJournal->addMessage("slReadFlash", QString("error 1: ") + m_lastErrorStr, 1);
+
 	}	
 
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0x02)!=0)	{ // a5 5a 03 07 00 00 02 00 10 00 00 00 -- read length
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		//ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teJournal->addMessage("slReadFlash", QString("error 2: ") + m_lastErrorStr, 1);
 	}
 
 	m_readBytes = 0;
@@ -608,15 +672,18 @@ void FTDIDeviceControl::slReadFlash()
 	m_inputFile = new QFile(tFileName);
 	if (!m_inputFile->open(QIODevice::WriteOnly)) {
 		m_inputFile = 0;
-		ui.teReceive->append("Open file error\n");
+		//ui.teReceive->append("Open file error\n");
+		ui.teJournal->addMessage("slReadFlash", "Open file error", 1);
 		QApplication::processEvents();
 		m_mtx.unlock();
 		return;
 	}
 
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x05)!=0) { // start reading a5 5a 03 07 00 00 03 00 05 00 00 00 -- cmd read fw
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		//ui.teReceive->append("error : " + m_lastErrorStr);	
+		ui.teJournal->addMessage("slReadFlash", QString("error 3: ") + m_lastErrorStr, 1);
 	}
+	ui.teJournal->addMessage("slReadFlash", "Reading is beginning ");
 	//		ff придти данные
 	m_mtx.unlock();
 }
@@ -680,6 +747,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 	}
 	else {
 		ui.teReceive->append(QString("good Wait %1ms\n").arg(tWTime));	
+		//ui.teJournal->addMessage("slReadFlash", QString("error 3: ") + m_lastErrorStr, 1);
 		if (typeToWait==PKG_TYPE_ERRORMES){
 			if (tCode!=0) {
 				m_lastErrorStr = QString("Error code %1\n").arg(tCode);	
@@ -694,41 +762,49 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 void FTDIDeviceControl::slUpdateFirmware()
 {	
 	if ( (m_rbfFileName!=ui.lePathToRBF->text())||(!QFile::exists(m_rbfFileName)) ) {
-		if (!slBrowseRBF()){	
+		if (!slBrowseRBF()){
+			ui.teJournal->addMessage("slUpdateFirmware", "Open RBF  error", 1);
 			QMessageBox::critical(0,"Open RBF error","Open RBF  error");
 			return;
 		}
 	}
 	ui.statusBar->showMessage("Read Flash ID");
 	if (!slReadFlashID()){	
+		ui.teJournal->addMessage("slUpdateFirmware", "ReadFlashID error", 1);
 		QMessageBox::critical(0,"ReadFlashID error","ReadFlashID error");
 		return;
 	}
 	ui.statusBar->showMessage("Read Start Address");
 	if (!slReadStartAddress()){	
+		ui.teJournal->addMessage("slUpdateFirmware", "Read Start Address error", 1);
 		QMessageBox::critical(0,"Read Start Address error","Read Start Address error");
 		return;
 	}
 	ui.statusBar->showMessage("Erase Flash");
-	if (!slEraseFlash()){	
+	if (!slEraseFlash()){
+		ui.teJournal->addMessage("slUpdateFirmware", "EraseFlash error", 1);
 		QMessageBox::critical(0,"EraseFlash error","EraseFlash error");
 		return;
 	}
 	ui.statusBar->showMessage("Write Length");
 	if (!slWriteLength()){	
+		ui.teJournal->addMessage("slUpdateFirmware", "WriteLength error", 1);
 		QMessageBox::critical(0,"WriteLength error","WriteLength error");
 		return;
 	}
 	ui.statusBar->showMessage("Write Cmd Update Firmware");
-	if (!slWriteCmdUpdateFirmware()){	
+	if (!slWriteCmdUpdateFirmware()){
+		ui.teJournal->addMessage("slUpdateFirmware", "WriteCmdUpdateFirmware error", 1);
 		QMessageBox::critical(0,"WriteCmdUpdateFirmware error","WriteCmdUpdateFirmware error");
 		return;
 	}
 	ui.statusBar->showMessage("Write Flash Firmware");
 	if (!slWriteFlash()){	
+		ui.teJournal->addMessage("slUpdateFirmware", "WriteFlash error", 1);
 		QMessageBox::critical(0,"WriteFlash error","WriteFlash error");
 		return;
 	}
+	ui.teJournal->addMessage("slUpdateFirmware", "Updated successful");
 	ui.statusBar->showMessage("Updated successful");
 	QMessageBox::information(0, "Updated successful", "Updated successful");
 }
@@ -739,39 +815,24 @@ void FTDIDeviceControl::slConnectToDevice()
 	if (ui.cbFTDIDevice->count()>0)
 		tResult = openPort(ui.cbFTDIDevice->currentIndex());
 	if (!tResult){
-		QMessageBox::critical(0,"Open error","Open error");
+		ui.teJournal->addMessage("slConnectToDevice", "Opening error",1);
+		QMessageBox::critical(0,"Opening error","Opening error");
 		return;
 	}
 	ui.tabWidget->setEnabled(true);
 	if (slGetInfo()){
+		ui.teJournal->addMessage("slConnectToDevice", "Connected successful");
 		ui.statusBar->showMessage("Connected successful");
 		QMessageBox::information(0, "Connected successful", "Connected successful");
 
 	}
 	else{
+		ui.teJournal->addMessage("slConnectToDevice", "Connection error",1);
 		ui.statusBar->showMessage("Connection error");
 		QMessageBox::critical(0,"Connection error","Connection error");
 	}
 }
 
-void FTDIDeviceControl::clearLogs()
-{	//почистим логи
-	QDir logDir(LOGPath);
-	QFileInfoList fiList = logDir.entryInfoList();
-	QFileInfoList::iterator i = fiList.begin();
-	int deletedFiles=0;
-	while(i!=fiList.end()) {
-		qint64 dt = (*i).lastModified().daysTo(QDateTime::currentDateTime());
-		if (dt>20){ // cтарше 20 дней чистим
-			if (QFile::remove((*i).absoluteFilePath()))
-				deletedFiles++;
-		}
-		++i;
-	}
-	if (deletedFiles){
-		ui.teJournal->addMessage("",QString("Удалено %1 файлов из каталога LOG").arg(deletedFiles));
-	}	
-}
 
 bool FTDIDeviceControl::slJumpToFact()
 {
@@ -779,17 +840,19 @@ bool FTDIDeviceControl::slJumpToFact()
 		return false;
 		
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, 0x00)!=0)	{
-		ui.teReceive->append("error : " + m_lastErrorStr);
+		//ui.teReceive->append("error : " + m_lastErrorStr);
+		ui.teJournal->addMessage("slJumpToFact", QString("error 16 : ") + m_lastErrorStr,1);
 		m_mtx.unlock();
 		return false;
 	}
 
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x17, 0x01)!=0)	{
-		ui.teReceive->append("error : " + m_lastErrorStr);
+		//ui.teReceive->append("error : " + m_lastErrorStr);
+		ui.teJournal->addMessage("slJumpToFact", QString("error 17: ") + m_lastErrorStr,1);
 		m_mtx.unlock();
 		return false;
 	}
-
+	ui.teJournal->addMessage("slJumpToFact", "Jump Appl successful ");
 	m_mtx.unlock();
 	return true;
 }
@@ -801,23 +864,26 @@ bool FTDIDeviceControl::slJumpToAppl()
 
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 4)!=0)	{
 		m_mtx.unlock();
-		ui.teReceive->append("error : " + m_lastErrorStr);		
+		ui.teJournal->addMessage("slJumpToAppl", QString("error 4: ") + m_lastErrorStr,1);
+		//ui.teReceive->append("error : " + m_lastErrorStr);		
 		return false;
 	}
 	Sleep(200);
 
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, m_startAddr)!=0)	{
-		ui.teReceive->append("error : " + m_lastErrorStr);
+		ui.teJournal->addMessage("slJumpToAppl", QString("error 16: ") + m_lastErrorStr,1);
+		//ui.teReceive->append("error : " + m_lastErrorStr);
 		m_mtx.unlock();
 		return false;
 	}
 
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x17, 0x01)!=0)	{
-		ui.teReceive->append("error : " + m_lastErrorStr);
+		ui.teJournal->addMessage("slJumpToAppl", QString("error 17: ") + m_lastErrorStr,1);
+		//ui.teReceive->append("error : " + m_lastErrorStr);
 		m_mtx.unlock();
 		return false;
 	}
-
+	ui.teJournal->addMessage("slJumpToAppl", "Jump Appl successful ");
 	m_mtx.unlock();
 	return true;
 }

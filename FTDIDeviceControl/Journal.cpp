@@ -30,7 +30,8 @@ CJournal::CJournal(QWidget *parent)
 	}
 	connect(this,SIGNAL(newData(QString, QString, bool )),SLOT(safeAddMessage(QString, QString, bool)) );
 	m_mtx.unlock();
-	addMessage("", "программа FTDIDeviceControl запущена"); 	
+	addMessage("", "программа FTDIDeviceControl запущена"); 
+	clearLogs();
 }
 
 CJournal::~CJournal()
@@ -66,4 +67,23 @@ void CJournal::safeAddMessage(QString a_module, QString a_text, bool isError)
 	c.movePosition(QTextCursor::End);
 	setTextCursor(c);
 	m_mtx.unlock();
+}
+
+void CJournal::clearLogs()
+{	//почистим логи
+	QDir logDir(LOGPath);
+	QFileInfoList fiList = logDir.entryInfoList();
+	QFileInfoList::iterator i = fiList.begin();
+	int deletedFiles=0;
+	while(i!=fiList.end()) {
+		qint64 dt = (*i).lastModified().daysTo(QDateTime::currentDateTime());
+		if (dt>20){ // cтарше 20 дней чистим
+			if (QFile::remove((*i).absoluteFilePath()))
+				deletedFiles++;
+		}
+		++i;
+	}
+	if (deletedFiles){
+		addMessage("",QString("Удалено %1 файлов из каталога LOG").arg(deletedFiles));
+	}	
 }

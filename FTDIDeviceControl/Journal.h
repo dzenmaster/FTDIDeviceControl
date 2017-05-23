@@ -23,15 +23,15 @@ public:
 signals:
 	void newData(QString a_module, QString a_text, bool isError);
 
-
-
 private:
-
 	QMutex m_mtx;	
 	QFile* m_logFile;
 	QTextCodec* m_codec;
 	QColor m_clrErr;
 	QColor m_clrInf;
+
+	void clearLogs();
+
 private slots:
 	void safeAddMessage(QString a_module, QString a_text, bool isError);
 
