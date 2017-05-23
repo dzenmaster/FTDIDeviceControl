@@ -254,7 +254,8 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 			break;
 			}
 	case 1: {//error
-				ui.teJournal->addMessage("slNewKadr", QString("Got Error Kadr %1").arg(aData[0]), 1);
+				if (aData[0]!=0)
+					ui.teJournal->addMessage("slNewKadr", QString("Got Error Kadr %1").arg(aData[0]), 1);
 			}
 	case 2: {
 				char* tStr = new char[aLen+1];
