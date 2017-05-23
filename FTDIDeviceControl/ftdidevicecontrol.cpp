@@ -48,6 +48,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbConnectToDevice, SIGNAL(clicked()), SLOT(slConnectToDevice()));
 	connect(ui.pbJumpToFact, SIGNAL(clicked()), SLOT(slJumpToFact()));
 	connect(ui.pbJumpToAppl, SIGNAL(clicked()), SLOT(slJumpToAppl()));
+	connect(ui.pbCancelUpdate,SIGNAL(clicked()), SLOT(slCancelUpdate()));
 
 	fillDeviceList();
 }
@@ -357,6 +358,7 @@ bool FTDIDeviceControl::slWriteFlash()
 {
 	if (!m_mtx.tryLock())
 		return false;
+	m_cancel = false;
 	//5. Далее просто посылать пакеты (type = 0x04) по 1024 байта(последний пакет будет меньшего размера); после каждого пакета должен приходить пакет OK. 
 	//	a5 5a 04 |00 04|00 00...........
 	//	| LEN |data.................. 
@@ -381,7 +383,7 @@ bool FTDIDeviceControl::slWriteFlash()
 		return false;	
 	}
 
-	ui.tabWidget->setEnabled(false);
+	ui.wUpdate->setEnabled(false);
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;
 	char buff[2048];
@@ -393,7 +395,7 @@ bool FTDIDeviceControl::slWriteFlash()
 	if (!f1.open(QIODevice::ReadOnly))	{
 		ui.teJournal->addMessage("slWriteFlash", QString("file open error %1").arg(fileName), 1);
 		QMessageBox::critical(this, "open err", "open err");
-		ui.tabWidget->setEnabled(true);
+		ui.wUpdate->setEnabled(true);
 		m_mtx.unlock();
 		return false;	
 	}
@@ -405,6 +407,14 @@ bool FTDIDeviceControl::slWriteFlash()
 	bool tSuccsess = false;
 	for(;;)	
 	{
+		if (m_cancel){//pushed cancel
+			if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x03, 0x00)!=0)  // stop write
+				ui.teJournal->addMessage("slWriteFlash", QString("error : ") + m_lastErrorStr, 1);					
+			else
+				ui.teJournal->addMessage("slWriteFlash", "stopped",1);		
+			tSuccsess = false;
+			break;
+		}
 		qint64 nWasRead = f1.read(&buff[5], 1024);		
 		//qint64 nWasRead = f1.read(&buff[5], 128);		
 		if (nWasRead < 1)
@@ -445,6 +455,7 @@ bool FTDIDeviceControl::slWriteFlash()
 			break;
 		}
 		ui.progressBarRBF->setValue((wasRW*100)/szFile);	
+		
 		QApplication::processEvents();	
 	}
 	
@@ -454,7 +465,7 @@ bool FTDIDeviceControl::slWriteFlash()
 	{
 		ui.teJournal->addMessage("slWriteFlash", "Unsuccessful write", 1);
 		//ui.teReceive->append("Unsuccessful write\n");
-		ui.tabWidget->setEnabled(true);
+		ui.wUpdate->setEnabled(true);
 		QApplication::processEvents();	
 		m_mtx.unlock();
 		return false;
@@ -472,7 +483,7 @@ bool FTDIDeviceControl::slWriteFlash()
 	else{
 		ui.teJournal->addMessage("slWriteFlash", "Unsuccessful write R3!=0", 1);
 	}
-	ui.tabWidget->setEnabled(true);
+	ui.wUpdate->setEnabled(true);
 	QApplication::processEvents();	
 	m_mtx.unlock();
 	return true;
@@ -555,7 +566,7 @@ bool FTDIDeviceControl::slEraseFlash()
 */
 	if (!m_mtx.tryLock())
 		return false;
-
+	m_cancel = true;
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
 		m_mtx.unlock();
@@ -566,11 +577,15 @@ bool FTDIDeviceControl::slEraseFlash()
 		m_mtx.unlock();
 		return false;	
 	}
-	setEnabled(false);
+	ui.wUpdate->setEnabled(false);
 	FT_STATUS ftStatus = FT_OK;
 	DWORD ret;	
 
-	for (unsigned char i = 0; i < 13; ++i) {	
+	for (unsigned char i = 0; i < 13; ++i) {
+		if (m_cancel){//pushed cancel
+			m_mtx.unlock();
+			return false;
+		}
 		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x10000 + m_startAddr)!=0)	{
 			//ui.teReceive->append("error : " + m_lastErrorStr);
 			ui.teJournal->addMessage("slEraseFlash", QString("error 1 : ") + m_lastErrorStr, 1);
@@ -588,12 +603,12 @@ bool FTDIDeviceControl::slEraseFlash()
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, m_startAddr)!=0)	{
 		//ui.teReceive->append("error : " + m_lastErrorStr);	
 		ui.teJournal->addMessage("slEraseFlash", QString("error back 1: ") + m_lastErrorStr, 1);
-		setEnabled(true);
+		ui.wUpdate->setEnabled(true);
 		m_mtx.unlock();
 		return false;
 	}
 	ui.teJournal->addMessage("slEraseFlash", "success ");
-	setEnabled(true);
+	ui.wUpdate->setEnabled(true);
 	m_mtx.unlock();
 	return true;
 }
@@ -889,4 +904,9 @@ bool FTDIDeviceControl::slJumpToAppl()
 	ui.teJournal->addMessage("slJumpToAppl", "Jump Appl successful ");
 	m_mtx.unlock();
 	return true;
+}
+
+void FTDIDeviceControl::slCancelUpdate()
+{
+	m_cancel=true;
 }

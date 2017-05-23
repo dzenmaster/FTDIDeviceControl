@@ -52,6 +52,7 @@ private:
 	QString m_lastErrorStr;
 	quint32 m_startAddr;
 	quint32 m_R3;
+	bool m_cancel;
 
 
 	bool openPort(int aNum);
@@ -85,6 +86,7 @@ private slots:
 	void slConnectToDevice();
 	bool slJumpToFact();
 	bool slJumpToAppl();
+	void slCancelUpdate();
 };
 
 #endif // FTDIDEVICECONTROL_H
