@@ -263,8 +263,8 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 				tStr[aLen] = 0;
 				QString tQStr = tStr;
 				ui.teModuleMessages->moveCursor (QTextCursor::End);
-				ui.teModuleMessages->insertPlainText(tStr);
-				ui.teJournal->addMessage("slNewKadr", QString("Ascii message from module : ") + tStr);
+				ui.teModuleMessages->insertPlainText(tQStr);
+				ui.teJournal->addMessage("slNewKadr", QString("Ascii message from module : ") + tQStr);
 				QApplication::processEvents();
 			}
 			break;
