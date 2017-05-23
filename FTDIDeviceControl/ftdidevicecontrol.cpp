@@ -70,6 +70,7 @@ void FTDIDeviceControl::slShowTerminal(bool st)
 	if (st){
 		ui.wTerm->setParent(0);
 		ui.wTerm->setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::WindowMaximizeButtonHint);
+		ui.wTerm->setEnabled(true);
 		ui.wTerm->show();
 	}
 	else {
