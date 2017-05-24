@@ -566,7 +566,7 @@ bool FTDIDeviceControl::slEraseFlash()
 */
 	if (!m_mtx.tryLock())
 		return false;
-	m_cancel = true;
+	m_cancel = false;
 	if(m_handle == NULL) {
 		QMessageBox::critical(this,"closed","need to open device");
 		m_mtx.unlock();
@@ -857,16 +857,16 @@ bool FTDIDeviceControl::slJumpToFact()
 	if (!m_mtx.tryLock())
 		return false;
 		
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, 0x00)!=0)	{
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x10, 0x00)!=0)	{
 		//ui.teReceive->append("error : " + m_lastErrorStr);
-		ui.teJournal->addMessage("slJumpToFact", QString("error 16 : ") + m_lastErrorStr,1);
+		ui.teJournal->addMessage("slJumpToFact", QString("error 10 : ") + m_lastErrorStr,1);
 		m_mtx.unlock();
 		return false;
 	}
 
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x17, 0x01)!=0)	{
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x11, 0x01)!=0)	{
 		//ui.teReceive->append("error : " + m_lastErrorStr);
-		ui.teJournal->addMessage("slJumpToFact", QString("error 17: ") + m_lastErrorStr,1);
+		ui.teJournal->addMessage("slJumpToFact", QString("error 11: ") + m_lastErrorStr,1);
 		m_mtx.unlock();
 		return false;
 	}
@@ -888,15 +888,15 @@ bool FTDIDeviceControl::slJumpToAppl()
 	}
 	Sleep(200);
 
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, m_startAddr)!=0)	{
-		ui.teJournal->addMessage("slJumpToAppl", QString("error 16: ") + m_lastErrorStr,1);
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x10, m_startAddr)!=0)	{
+		ui.teJournal->addMessage("slJumpToAppl", QString("error 10: ") + m_lastErrorStr,1);
 		//ui.teReceive->append("error : " + m_lastErrorStr);
 		m_mtx.unlock();
 		return false;
 	}
 
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x17, 0x01)!=0)	{
-		ui.teJournal->addMessage("slJumpToAppl", QString("error 17: ") + m_lastErrorStr,1);
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x11, 0x01)!=0)	{
+		ui.teJournal->addMessage("slJumpToAppl", QString("error 11: ") + m_lastErrorStr,1);
 		//ui.teReceive->append("error : " + m_lastErrorStr);
 		m_mtx.unlock();
 		return false;
