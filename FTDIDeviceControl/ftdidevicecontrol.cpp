@@ -1000,14 +1000,16 @@ void FTDIDeviceControl::slViewRaw()
 		if (m_gettingFile==false)
 			break;
 		QApplication::processEvents();
-	}
+	}	
 	int et = tt.elapsed();
+	m_mtx.lock();
 	if  (m_gettingFile==false)
 		ui.teJournal->addMessage("slReadRaw", QString("time of getting new frame %1").arg(et));
 	else
 		ui.teJournal->addMessage("slReadRaw", QString("Timeout. time of getting new frame %1").arg(et), 1);
 	QApplication::processEvents();
 	setEnabled(true);
+	m_mtx.unlock();
 }
 
 void FTDIDeviceControl::slDrawPicture(const QString& fileName)
@@ -1016,8 +1018,18 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 
 	QFileInfo fi(fileName);
 	qint64 sz = fi.size();
+	ui.teJournal->addMessage("slReadRaw", QString("size %1").arg(sz));
+	if (sz!=221184){
+		ui.teJournal->addMessage("slReadRaw", "wrong size",1);
+		m_mtx.unlock();
+		return;
+	}
 	QFile f1(fileName);
-	f1.open(QIODevice::ReadOnly);
+	if (!f1.open(QIODevice::ReadOnly)){
+		ui.teJournal->addMessage("slReadRaw", "open error",1);
+		m_mtx.unlock();
+		return;
+	}
 	
 	unsigned short tUS=0;
 	for(int i = 0; i < 288; ++i)
@@ -1028,7 +1040,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 		}
 	}
 	f1.close();
-
+	ui.teJournal->addMessage("slReadRaw", "read file finished");
 	//QImage m_img(384, 288, QImage::Format_Indexed8); //640,480 size picture.	
 	for(int i = 0; i < m_img.height(); ++i)
 	{
