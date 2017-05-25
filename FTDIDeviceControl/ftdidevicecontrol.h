@@ -63,6 +63,7 @@ private:
 	bool m_cancel;
 	unsigned char m_rawDataMono8[288][384];//test
 	QImage m_img;
+	bool m_gettingFile;
 
 
 	bool openPort(int aNum);
