@@ -973,9 +973,8 @@ void FTDIDeviceControl::slViewRaw()
 		QApplication::processEvents();
 		m_mtx.unlock();
 		return;
-	}
-	QTime tt;
-	tt.start();
+	}		
+	m_time.start();
 	m_gettingFile=true;
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x15, 0x01)!=0) { 
 		ui.teJournal->addMessage("slReadRaw", QString("error 15: ") + m_lastErrorStr, 1);		
@@ -990,25 +989,6 @@ void FTDIDeviceControl::slViewRaw()
 	}	
 
 	ui.teJournal->addMessage("slReadRaw", "Reading is beginning ");
-	m_mtx.unlock();
-
-
-	setEnabled(false);
-//start waiting timer
-	for(int i = 0; i < 2500; ++i) {
-		Sleep(16);
-		if (m_gettingFile==false)
-			break;
-		QApplication::processEvents();
-	}	
-	int et = tt.elapsed();
-	m_mtx.lock();
-	if  (m_gettingFile==false)
-		ui.teJournal->addMessage("slReadRaw", QString("time of getting new frame %1").arg(et));
-	else
-		ui.teJournal->addMessage("slReadRaw", QString("Timeout. time of getting new frame %1").arg(et), 1);
-	QApplication::processEvents();
-	setEnabled(true);
 	m_mtx.unlock();
 }
 
@@ -1049,5 +1029,26 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	//ui.lView->setScaledContents(true);
 	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
 	m_gettingFile = false;	
+
+
+/*	setEnabled(false);
+//start waiting timer
+	for(int i = 0; i < 2500; ++i) {
+		Sleep(16);
+		if (m_gettingFile==false)
+			break;
+		QApplication::processEvents();
+	}	*/
+	int et = m_time.elapsed();
+
+	//if  (m_gettingFile==false)
+		ui.teJournal->addMessage("slReadRaw", QString("time of getting new frame %1").arg(et));
+	/*else
+		ui.teJournal->addMessage("slReadRaw", QString("Timeout. time of getting new frame %1").arg(et), 1);
+	QApplication::processEvents();
+	setEnabled(true);
+	*/
+
+
 	m_mtx.unlock();
 }

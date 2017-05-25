@@ -3,6 +3,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QMutex>
+#include <QTime>
 
 #include "ui_ftdidevicecontrol.h"
 #include "ftd2xx.h"
@@ -64,6 +65,7 @@ private:
 	unsigned char m_rawDataMono8[288][384];//test
 	QImage m_img;
 	bool m_gettingFile;
+	QTime m_time;
 
 
 	bool openPort(int aNum);
