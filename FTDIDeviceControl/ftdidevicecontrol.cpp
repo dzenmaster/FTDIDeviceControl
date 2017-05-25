@@ -999,13 +999,14 @@ void FTDIDeviceControl::slViewRaw()
 		Sleep(16);
 		if (m_gettingFile==false)
 			break;
+		QApplication::processEvents();
 	}
 	int et = tt.elapsed();
 	if  (m_gettingFile==false)
 		ui.teJournal->addMessage("slReadRaw", QString("time of getting new frame %1").arg(et));
 	else
 		ui.teJournal->addMessage("slReadRaw", QString("Timeout. time of getting new frame %1").arg(et), 1);
-
+	QApplication::processEvents();
 	setEnabled(true);
 }
 
@@ -1035,6 +1036,6 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	}
 	//ui.lView->setScaledContents(true);
 	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
-	m_gettingFile = false;
+	m_gettingFile = false;	
 	m_mtx.unlock();
 }
