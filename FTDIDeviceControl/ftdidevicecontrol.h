@@ -25,6 +25,12 @@ enum
 	PKG_TYPE_RWPACKET=4
 };
 
+enum
+{
+	FILE_RBF = 0,
+	FILE_RAW = 1
+};
+
 class FTDIDeviceControl : public QMainWindow
 {
 	Q_OBJECT
@@ -45,14 +51,18 @@ private:
 	quint32 m_flashID;
 	QMutex m_mtx;
 	quint64 m_readBytes;
+	
 	quint64 m_inputLength;
-	QFile* m_inputFile;
+	QFile* m_inputFile;	
 	unsigned char m_buff[2048];
-	QString m_rbfFileName;
+	QString m_fileName;
+	int m_fileType;
 	QString m_lastErrorStr;
 	quint32 m_startAddr;
 	quint32 m_R3;
 	bool m_cancel;
+	unsigned char m_rawDataMono8[288][384];//test
+	QImage m_img;
 
 
 	bool openPort(int aNum);
@@ -87,6 +97,10 @@ private slots:
 	bool slJumpToFact();
 	bool slJumpToAppl();
 	void slCancelUpdate();
+	void slViewRaw();
+	void slDrawPicture(const QString& fileName);
+signals:
+	void newRAWFrame(const QString&);
 };
 
 #endif // FTDIDEVICECONTROL_H

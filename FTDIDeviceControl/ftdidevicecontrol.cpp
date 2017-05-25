@@ -12,15 +12,20 @@
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
-	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0)
+	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
+	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
+	m_img(384, 288, QImage::Format_Indexed8)
 {
 	ui.setupUi(this);
+//	slDrawPicture("framelink22.raw");
 
 	ui.lModule->hide();
 	ui.cbModule->hide();
 	
 	ui.tabWidget->removeTab(0);
 	ui.tabWidget->removeTab(3);
+
+	//for test
 	ui.tabWidget->setEnabled(false);
 
 	setRbfFileName(g_Settings.value("rbfFileName", "").toString());
@@ -49,6 +54,9 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbJumpToFact, SIGNAL(clicked()), SLOT(slJumpToFact()));
 	connect(ui.pbJumpToAppl, SIGNAL(clicked()), SLOT(slJumpToAppl()));
 	connect(ui.pbCancelUpdate,SIGNAL(clicked()), SLOT(slCancelUpdate()));
+
+	connect(ui.pbFCView,SIGNAL(clicked()), SLOT(slViewRaw()));
+	connect(this,SIGNAL(newRAWFrame(const QString&)),SLOT(slDrawPicture(const QString&)));
 
 	fillDeviceList();
 }
@@ -300,7 +308,7 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 			 }
 			 break;
 	case 4: {
-				if (m_inputFile) {			
+				if (m_inputFile) {								
 					m_inputFile->write((const char*)aData, aLen);
 					m_readBytes+=aLen;
 					ui.progressBarRBF->setValue((m_readBytes*100)/m_inputLength);	
@@ -310,10 +318,33 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 							m_inputFile->close();
 						delete m_inputFile;
 						m_inputFile = 0;
-						ui.teJournal->addMessage("slNewKadr", "Flash Reading is finished");
-						QMessageBox::information(this, "Flash Reading is finished", "Flash Reading is finished");
+						if (m_fileType==FILE_RBF) {			
+							ui.teJournal->addMessage("slNewKadr", "Flash Reading is finished");
+							QMessageBox::information(this, "Flash Reading is finished", "Flash Reading is finished");
+						}
+						else if (m_fileType==FILE_RAW) {
+							ui.teJournal->addMessage("slNewKadr", "got RAW");
+							emit newRAWFrame(m_fileName);
+						}
 					}
-				}
+				}				
+			}
+			break;
+	case 5: {
+			/*	if (m_inputFrameFile) {			
+					m_inputFrameFile->write((const char*)aData, aLen);
+					m_readFrameBytes+=aLen;
+					ui.progressFrameBar->setValue((m_readBytes*100)/m_inputLength);	
+					QApplication::processEvents();
+					if (221184<=m_readBytes) {
+						if (m_inputFrameFile->isOpen())
+							m_inputFrameFile->close();
+						delete m_inputFrameFile;
+						m_inputFrameFile = 0;
+						ui.teJournal->addMessage("slNewKadr", "Frame is got");
+						emit newFrame;
+					}
+				}*/
 			}
 			break;
 	default:
@@ -342,13 +373,13 @@ bool FTDIDeviceControl::slBrowseRBF()
 
 bool FTDIDeviceControl::setRbfFileName(const QString& fn)
 {
-	m_rbfFileName  = fn;
-	ui.lePathToRBF->setText(m_rbfFileName );
-	if (QFile::exists(m_rbfFileName )) {
-		QFileInfo fi(m_rbfFileName);
+	m_fileName  = fn;
+	ui.lePathToRBF->setText(m_fileName );
+	if (QFile::exists(m_fileName )) {
+		QFileInfo fi(m_fileName);
 		ui.lSize->setText(QString("Size %1").arg(fi.size()));
-		g_Settings.setValue("rbfFileName", m_rbfFileName);
-		ui.teJournal->addMessage("setRbfFileName", m_rbfFileName);
+		g_Settings.setValue("rbfFileName", m_fileName);
+		ui.teJournal->addMessage("setRbfFileName", m_fileName);
 		return true;
 	}
 	return false;
@@ -668,15 +699,19 @@ void FTDIDeviceControl::slReadFlash()
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, m_startAddr)!=0) { // a5 5a 03 07 00 00 01 00 00 00 00 00 -- set start epcs addr 0
 		//ui.teReceive->append("error : " + m_lastErrorStr);	
 		ui.teJournal->addMessage("slReadFlash", QString("error 1: ") + m_lastErrorStr, 1);
-
+		m_mtx.unlock();
+		return;
 	}	
 
 	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0x02)!=0)	{ // a5 5a 03 07 00 00 02 00 10 00 00 00 -- read length
 		//ui.teReceive->append("error : " + m_lastErrorStr);		
 		ui.teJournal->addMessage("slReadFlash", QString("error 2: ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return;
 	}
 
 	m_readBytes = 0;
+	m_fileType=FILE_RBF;
 	if (m_inputFile) {
 		if (m_inputFile->isOpen())
 			m_inputFile->close();
@@ -779,7 +814,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 
 void FTDIDeviceControl::slUpdateFirmware()
 {	
-	if ( (m_rbfFileName!=ui.lePathToRBF->text())||(!QFile::exists(m_rbfFileName)) ) {
+	if ( (m_fileName!=ui.lePathToRBF->text())||(!QFile::exists(m_fileName)) ) {
 		if (!slBrowseRBF()){
 			ui.teJournal->addMessage("slUpdateFirmware", "Open RBF  error", 1);
 			QMessageBox::critical(0,"Open RBF error","Open RBF  error");
@@ -909,4 +944,79 @@ bool FTDIDeviceControl::slJumpToAppl()
 void FTDIDeviceControl::slCancelUpdate()
 {
 	m_cancel=true;
+}
+
+
+
+//for test
+void FTDIDeviceControl::slViewRaw()
+{
+	if (!m_mtx.tryLock())
+		return;
+
+	m_readBytes = 0;	
+	m_fileType=FILE_RAW;
+	if (m_inputFile) {
+		if (m_inputFile->isOpen())
+			m_inputFile->close();
+		delete m_inputFile;
+		m_inputFile = 0;
+	}
+
+	m_fileName = "frame.raw";//QFileDialog::getSaveFileName(this, "save", "", "RBF Files (*.rbf)");
+	m_inputLength = 384*288*2;
+	m_inputFile = new QFile(m_fileName);
+	if (!m_inputFile->open(QIODevice::WriteOnly)) {
+		delete m_inputFile;
+		m_inputFile = 0;		
+		ui.teJournal->addMessage("slViewRaw", "Open file error", 1);
+		QApplication::processEvents();
+		m_mtx.unlock();
+		return;
+	}
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x15, 0x01)!=0) { 
+		ui.teJournal->addMessage("slReadRaw", QString("error 15: ") + m_lastErrorStr, 1);		
+		m_mtx.unlock();
+		return;
+	}	
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x16, 0x01)!=0) { 
+		ui.teJournal->addMessage("slReadRaw", QString("error 16: ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return;
+	}	
+
+	ui.teJournal->addMessage("slReadRaw", "Reading is beginning ");
+	m_mtx.unlock();
+}
+
+void FTDIDeviceControl::slDrawPicture(const QString& fileName)
+{
+	m_mtx.lock();
+
+	QFileInfo fi(fileName);
+	qint64 sz = fi.size();
+	QFile f1(fileName);
+	f1.open(QIODevice::ReadOnly);
+	
+	unsigned short tUS=0;
+	for(int i = 0; i < 288; ++i)
+	{
+		for(int j=0;j<384;++j){
+			f1.read((char*)(&tUS), 2);
+			m_rawDataMono8[i][j]=(unsigned char)(tUS>>8);
+		}
+	}
+	f1.close();
+
+	//QImage m_img(384, 288, QImage::Format_Indexed8); //640,480 size picture.	
+	for(int i = 0; i < m_img.height(); ++i)
+	{
+		 memcpy(m_img.scanLine(i), m_rawDataMono8[i], m_img.bytesPerLine());
+	}
+	//ui.lView->setScaledContents(true);
+	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
+
+	m_mtx.unlock();
 }
