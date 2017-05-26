@@ -114,6 +114,7 @@ private slots:
 
 	void slSelectedFrame(QListWidgetItem *);
 	void slClearFrameFolder();
+	void slOpenFolder();
 
 signals:
 	void newRAWFrame(const QString&);

@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QSettings>
 #include <QTimer>
+#include <QProcess>
 
 #include "WaitingThread.h"
 
@@ -71,6 +72,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbFCView,SIGNAL(clicked()), SLOT(slViewRaw()));
 	connect(this,SIGNAL(newRAWFrame(const QString&)),SLOT(slDrawPicture(const QString&)));
 	connect(ui.listWFrames, SIGNAL(itemClicked(QListWidgetItem *)),SLOT(slSelectedFrame(QListWidgetItem *)));
+	connect(ui.pbOpenFolder, SIGNAL(clicked()), SLOT(slOpenFolder()));
 
 	fillDeviceList();	
 }
@@ -1140,3 +1142,9 @@ void	FTDIDeviceControl::slClearFrameFolder()
 		++i;
 	}
 }	
+
+void FTDIDeviceControl::slOpenFolder()
+{
+	QString tdir = QDir::toNativeSeparators(m_framesPath);
+	QProcess::execute("Explorer "+ tdir);
+}
