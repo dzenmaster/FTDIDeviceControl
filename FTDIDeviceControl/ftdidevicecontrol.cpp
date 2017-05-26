@@ -12,12 +12,22 @@
 
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
+extern QString g_basePath;
+
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
-	m_img(384, 288, QImage::Format_Indexed8), m_timer4WaitFrame(0)
+	m_img(384, 288, QImage::Format_Indexed8), m_timer4WaitFrame(0),m_frameCnt(0)
 {
 	ui.setupUi(this);
+	m_framesPath = g_basePath+"Frames";
+	if (!QFile::exists(m_framesPath)) {
+		QDir td;
+		if (!td.mkpath(m_framesPath)) {
+			ui.teJournal->addMessage("cant make path",m_framesPath,1);		
+		}
+	}
+	updateFramesList();
 //	slDrawPicture("framelink22.raw");
 
 	ui.lModule->hide();
@@ -27,7 +37,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	ui.tabWidget->removeTab(3);
 
 	//for test
-	ui.tabWidget->setEnabled(false);
+//	ui.tabWidget->setEnabled(false);
 
 	setRbfFileName(g_Settings.value("rbfFileName", "").toString());
 
@@ -58,8 +68,24 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 
 	connect(ui.pbFCView,SIGNAL(clicked()), SLOT(slViewRaw()));
 	connect(this,SIGNAL(newRAWFrame(const QString&)),SLOT(slDrawPicture(const QString&)));
+	connect(ui.listWFrames, SIGNAL(itemClicked(QListWidgetItem *)),SLOT(slSelectedFrame(QListWidgetItem *)));
 
 	fillDeviceList();	
+}
+
+void FTDIDeviceControl::updateFramesList()
+{
+	ui.listWFrames->clear();
+	QDir frDir(m_framesPath);
+	QFileInfoList fiList = frDir.entryInfoList();
+	QFileInfoList::iterator i = fiList.begin();	
+
+	while(i!=fiList.end()) {
+		QString fn = (*i).fileName();
+		if ((fn!=".")&&(fn!=".."))
+			ui.listWFrames->addItem((*i).fileName());
+		++i;
+	}
 }
 
 FTDIDeviceControl::~FTDIDeviceControl()
@@ -963,8 +989,8 @@ void FTDIDeviceControl::slViewRaw()
 		delete m_inputFile;
 		m_inputFile = 0;
 	}
-
-	m_fileName = "frame.raw"; //QFileDialog::getSaveFileName(this, "save", "", "RBF Files (*.rbf)");
+	QDateTime dt = QDateTime::currentDateTime();
+	m_fileName = m_framesPath + "/fr" + QString::number(++m_frameCnt) + dt.toString("_dd-MM-yyyy")+"_"+dt.toString("hh'h'mm'm'ss's'")+".raw" ; //QFileDialog::getSaveFileName(this, "save", "", "RBF Files (*.rbf)");
 	m_inputLength = 384*288*2;
 	m_inputFile = new QFile(m_fileName);
 	if (!m_inputFile->open(QIODevice::WriteOnly)) {
@@ -1057,6 +1083,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 
 void FTDIDeviceControl::slWaitFrameFinished() // timeout in waiting frame
 {
+	m_mtx.lock();
 	if (m_timer4WaitFrame){
 		m_timer4WaitFrame->stop();
 		m_timer4WaitFrame->disconnect();
@@ -1064,23 +1091,33 @@ void FTDIDeviceControl::slWaitFrameFinished() // timeout in waiting frame
 		m_timer4WaitFrame=0;
 	}
 
+	if (m_inputFile) {
+		if (m_inputFile->isOpen())
+			m_inputFile->close();
+		delete m_inputFile;
+		m_inputFile = 0;
+	}
+
 	if (!m_gettingFile)
 		return;
 	ui.tabWidget->setEnabled(true);
-	QMessageBox::critical(this,"slWaitFrameFinished","Timeout");		
+	QMessageBox::critical(this,"slWaitFrameFinished","Timeout");	
+	m_mtx.unlock();
 }
 
 void	FTDIDeviceControl::resizeEvent(QResizeEvent * event)
-{
-	//QPixmap ddd = QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio);
-	//QSize sss = ddd.size();
-	//QSize sss2 = ui.lView->size();
-
-	//ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
+{	
 	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void	FTDIDeviceControl::showEvent(QShowEvent * event)
 {
 	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+}
+
+void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem)
+{
+	if (!aItem)
+		return;	
+	slDrawPicture(m_framesPath+"/"+aItem->text());
 }

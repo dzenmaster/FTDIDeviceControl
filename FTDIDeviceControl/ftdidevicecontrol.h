@@ -71,6 +71,8 @@ private:
 	QTime m_time;
 
 	QTimer* m_timer4WaitFrame;
+	QString m_framesPath;
+	int m_frameCnt;
 
 	bool openPort(int aNum);
 	void closePort();
@@ -80,6 +82,7 @@ private:
 	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
 	bool setRbfFileName(const QString&);
 	void toLog(const QString& logStr);
+	void updateFramesList();
 
 
 private slots:
@@ -108,6 +111,8 @@ private slots:
 	void slDrawPicture(const QString& fileName);
 
 	void slWaitFrameFinished();
+
+	void slSelectedFrame(QListWidgetItem *);
 
 signals:
 	void newRAWFrame(const QString&);

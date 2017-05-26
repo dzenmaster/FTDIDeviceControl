@@ -6,6 +6,7 @@
 #include <QTextCodec>
 
 QString LOGPath;
+QString g_basePath;
 
 int main(int argc, char *argv[])
 {
@@ -32,8 +33,8 @@ int main(int argc, char *argv[])
 	char* pp = strrchr(basePathChar,'\\');
 	(pp) ?	*(pp+1)=0 :	basePathChar[0]=0;
 	QTextCodec* codec = QTextCodec::codecForName("Windows-1251");
-	QString basePath = codec->toUnicode(basePathChar);
-	LOGPath = basePath +"LOG\\";
+	g_basePath = codec->toUnicode(basePathChar);
+	LOGPath = g_basePath +"LOG\\";
 
 	QApplication a(argc, argv);
 
