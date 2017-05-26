@@ -59,7 +59,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbFCView,SIGNAL(clicked()), SLOT(slViewRaw()));
 	connect(this,SIGNAL(newRAWFrame(const QString&)),SLOT(slDrawPicture(const QString&)));
 
-	fillDeviceList();
+	fillDeviceList();	
 }
 
 FTDIDeviceControl::~FTDIDeviceControl()
@@ -1045,7 +1045,8 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 		 memcpy(m_img.scanLine(i), m_rawDataMono8[i], m_img.bytesPerLine());
 	}
 	//ui.lView->setScaledContents(true);
-	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
+	//ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
+	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 	m_gettingFile = false;	
 
 	int et = m_time.elapsed();
@@ -1067,4 +1068,19 @@ void FTDIDeviceControl::slWaitFrameFinished() // timeout in waiting frame
 		return;
 	ui.tabWidget->setEnabled(true);
 	QMessageBox::critical(this,"slWaitFrameFinished","Timeout");		
+}
+
+void	FTDIDeviceControl::resizeEvent(QResizeEvent * event)
+{
+	//QPixmap ddd = QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio);
+	//QSize sss = ddd.size();
+	//QSize sss2 = ui.lView->size();
+
+	//ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
+	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+}
+
+void	FTDIDeviceControl::showEvent(QShowEvent * event)
+{
+	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }

@@ -42,6 +42,9 @@ public:
 
 protected:
 	virtual void	closeEvent(QCloseEvent * event);
+	virtual void	resizeEvent(QResizeEvent * event);
+	virtual void	showEvent(QShowEvent * event);
+
 
 private:
 	Ui::FTDIDeviceControlClass ui;
