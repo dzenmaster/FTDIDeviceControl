@@ -1017,6 +1017,11 @@ void FTDIDeviceControl::slViewRaw()
 {
 	if (!m_mtx.tryLock())
 		return;
+	if ( m_handle == NULL ) {		
+		m_lastErrorStr = "need to open device";
+		QMessageBox::critical(this, "need to open device","need to open device");
+		return;
+	}
 
 	m_readBytes = 0;	
 	m_fileType=FILE_RAW;
@@ -1133,7 +1138,8 @@ void FTDIDeviceControl::slWaitFrameFinished() // timeout in waiting frame
 			m_inputFile->close();
 		delete m_inputFile;
 		m_inputFile = 0;
-	}
+		QFile::remove(m_fileName);
+	}	
 
 	if (!m_gettingFile)
 		return;
