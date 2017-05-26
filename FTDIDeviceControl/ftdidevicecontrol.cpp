@@ -14,6 +14,34 @@
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
 extern QString g_basePath;
+extern QString selfName;
+
+
+bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned short* pwLSHW, unsigned short* pwLSLW)
+{	
+	if ((!pwMSHW)||(!pwMSLW)||(!pwLSHW)||(!pwLSLW))
+		return false;
+	*pwMSHW = *pwMSLW = *pwLSHW = *pwLSLW = 0;
+	LPDWORD lpdwHandleToZero = 0; 
+	DWORD dwSizeFVerInf = ::GetFileVersionInfoSizeW((LPCWSTR)selfName.utf16(), lpdwHandleToZero);		
+	LPVOID lpFixedFileInf = new char[dwSizeFVerInf];
+	BOOL bRet = ::GetFileVersionInfoW((LPCWSTR)selfName.utf16(), NULL, dwSizeFVerInf, lpFixedFileInf);
+	if(bRet) {
+		VS_FIXEDFILEINFO *pFixedFileInfo; 
+		UINT uLen = 0;                   
+		QString dsl = "\\";
+		bRet = VerQueryValueW((const LPVOID)lpFixedFileInf,	L"\\", (LPVOID *) (&pFixedFileInfo), &uLen);
+		if(bRet) {
+			*pwMSHW = HIWORD (pFixedFileInfo->dwFileVersionMS);
+			*pwMSLW = LOWORD(pFixedFileInfo->dwFileVersionMS);
+			*pwLSHW = HIWORD (pFixedFileInfo->dwFileVersionLS);
+			*pwLSLW = LOWORD(pFixedFileInfo->dwFileVersionLS);
+		}
+	}
+	delete[] lpFixedFileInf;
+	return bRet;
+}
+
 
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
@@ -22,6 +50,11 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 {
 	m_img.fill(127);//init
 	ui.setupUi(this);
+	//version
+	unsigned short v1,v2,v3,v4;
+	if (getVersionInfo(&v1,&v2,&v3,&v4))
+		setWindowTitle(QString("FTDI Device Control ver. %1.%2.%3.%4").arg(v1).arg(v2).arg(v3).arg(v4) );
+
 	m_framesPath = g_basePath+"Frames";
 	if (!QFile::exists(m_framesPath)) {
 		QDir td;
@@ -1128,6 +1161,14 @@ void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem)
 
 void	FTDIDeviceControl::slClearFrameFolder()
 {
+	QMessageBox msgBox;
+	msgBox.setText(m_framesPath + " will be cleaned");
+	msgBox.setInformativeText("Do you want to proceed?");
+	msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
+	msgBox.setDefaultButton(QMessageBox::Cancel);
+	if (msgBox.exec()==QMessageBox::Cancel)
+		return;
+
 	ui.listWFrames->clear();
 	QDir frDir(m_framesPath);
 	QFileInfoList fiList = frDir.entryInfoList();

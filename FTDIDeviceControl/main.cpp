@@ -7,6 +7,7 @@
 
 QString LOGPath;
 QString g_basePath;
+QString selfName;
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +31,7 @@ int main(int argc, char *argv[])
 
 	char* basePathChar = new char[2048];
 	qstrncpy(basePathChar,argv[0],2047);
+	selfName = basePathChar;
 	char* pp = strrchr(basePathChar,'\\');
 	(pp) ?	*(pp+1)=0 :	basePathChar[0]=0;
 	QTextCodec* codec = QTextCodec::codecForName("Windows-1251");
