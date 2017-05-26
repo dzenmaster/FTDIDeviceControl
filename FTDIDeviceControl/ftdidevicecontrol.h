@@ -67,6 +67,7 @@ private:
 	bool m_gettingFile;
 	QTime m_time;
 
+	QTimer* m_timer4WaitFrame;
 
 	bool openPort(int aNum);
 	void closePort();
@@ -102,6 +103,9 @@ private slots:
 	void slCancelUpdate();
 	void slViewRaw();
 	void slDrawPicture(const QString& fileName);
+
+	void slWaitFrameFinished();
+
 signals:
 	void newRAWFrame(const QString&);
 };
