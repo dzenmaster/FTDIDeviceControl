@@ -19,6 +19,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
 	m_img(384, 288, QImage::Format_Indexed8), m_timer4WaitFrame(0),m_frameCnt(0)
 {
+	m_img.fill(127);//init
 	ui.setupUi(this);
 	m_framesPath = g_basePath+"Frames";
 	if (!QFile::exists(m_framesPath)) {
@@ -1077,7 +1078,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 
 	int et = m_time.elapsed();
 	ui.teJournal->addMessage("slReadRaw", QString("time of getting new frame %1").arg(et));
-
+	updateFramesList();
 	m_mtx.unlock();
 }
 
