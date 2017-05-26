@@ -65,7 +65,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbConnectToDevice, SIGNAL(clicked()), SLOT(slConnectToDevice()));
 	connect(ui.pbJumpToFact, SIGNAL(clicked()), SLOT(slJumpToFact()));
 	connect(ui.pbJumpToAppl, SIGNAL(clicked()), SLOT(slJumpToAppl()));
-	connect(ui.pbCancelUpdate,SIGNAL(clicked()), SLOT(slCancelUpdate()));
+	connect(ui.pbCancelUpdate, SIGNAL(clicked()), SLOT(slCancelUpdate()));
+	connect(ui.pbClearFrameFolder, SIGNAL(clicked()), SLOT(slClearFrameFolder()));
 
 	connect(ui.pbFCView,SIGNAL(clicked()), SLOT(slViewRaw()));
 	connect(this,SIGNAL(newRAWFrame(const QString&)),SLOT(slDrawPicture(const QString&)));
@@ -1122,3 +1123,20 @@ void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem)
 		return;	
 	slDrawPicture(m_framesPath+"/"+aItem->text());
 }
+
+void	FTDIDeviceControl::slClearFrameFolder()
+{
+	ui.listWFrames->clear();
+	QDir frDir(m_framesPath);
+	QFileInfoList fiList = frDir.entryInfoList();
+	QFileInfoList::iterator i = fiList.begin();	
+
+	while(i!=fiList.end()) {
+		QString fn = (*i).fileName();
+		if ((fn!=".")&&(fn!="..")){
+		//	ui.listWFrames->addItem((*i).fileName());
+			QFile::remove((*i).absoluteFilePath());
+		}
+		++i;
+	}
+}	
