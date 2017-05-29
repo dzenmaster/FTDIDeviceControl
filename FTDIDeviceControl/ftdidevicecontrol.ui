@@ -40,7 +40,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>FTDI Device</string>
+          <string>FTDI Устройство</string>
          </property>
         </widget>
        </item>
@@ -50,7 +50,7 @@
        <item>
         <widget class="QLabel" name="lModule">
          <property name="text">
-          <string>Module</string>
+          <string>Модуль</string>
          </property>
         </widget>
        </item>
@@ -60,7 +60,7 @@
        <item>
         <widget class="QPushButton" name="pbConnectToDevice">
          <property name="text">
-          <string>Connect to device</string>
+          <string>Соединиться с устройством</string>
          </property>
         </widget>
        </item>
@@ -92,7 +92,7 @@
        <item>
         <widget class="QCheckBox" name="cbShowTerminal">
          <property name="text">
-          <string>Show terminal</string>
+          <string>Показать терминал</string>
          </property>
         </widget>
        </item>
@@ -142,7 +142,7 @@
        <item row="1" column="0">
         <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Serial Number</string>
+          <string>Серийный номер</string>
          </property>
         </widget>
        </item>
@@ -162,14 +162,14 @@
        <item row="2" column="0">
         <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>Firmware Version</string>
+          <string>Версия Firmware</string>
          </property>
         </widget>
        </item>
        <item row="3" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Software Version</string>
+          <string>Версия Software</string>
          </property>
         </widget>
        </item>
@@ -189,7 +189,7 @@
        <item row="0" column="0">
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Type</string>
+          <string>Тип</string>
          </property>
         </widget>
        </item>
@@ -247,7 +247,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -268,7 +268,7 @@
       </widget>
       <widget class="QWidget" name="tab_3">
        <attribute name="title">
-        <string>Update</string>
+        <string>Обновление</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <property name="spacing">
@@ -292,7 +292,7 @@
            <item>
             <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Path to RBF</string>
+              <string>Путь до RBF</string>
              </property>
             </widget>
            </item>
@@ -313,7 +313,7 @@
            <item>
             <widget class="QPushButton" name="pbUpdateFirmware">
              <property name="text">
-              <string>Update</string>
+              <string>Обновить</string>
              </property>
             </widget>
            </item>
@@ -345,7 +345,7 @@
            <item>
             <widget class="QPushButton" name="pbCancelUpdate">
              <property name="text">
-              <string>Cancel</string>
+              <string>Отмена</string>
              </property>
             </widget>
            </item>
@@ -529,12 +529,12 @@
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
-        <string>Parameters</string>
+        <string>Настройки</string>
        </attribute>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
-        <string>Frame Capture</string>
+        <string>Захват</string>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_12">
         <property name="spacing">
@@ -651,14 +651,14 @@ background-color: grey;
               <item>
                <widget class="QWidget" name="widget_11" native="true">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
                 <layout class="QFormLayout" name="formLayout_3">
                  <property name="horizontalSpacing">
-                  <number>2</number>
+                  <number>6</number>
                  </property>
                  <property name="verticalSpacing">
                   <number>2</number>
@@ -691,7 +691,7 @@ background-color: grey;
                  <item row="0" column="1">
                   <widget class="QComboBox" name="comboBox">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -704,17 +704,17 @@ background-color: grey;
                    </property>
                    <item>
                     <property name="text">
-                     <string>RAW 16 bit</string>
+                     <string>RAW 16 бит</string>
                     </property>
                    </item>
                    <item>
                     <property name="text">
-                     <string>12 bit</string>
+                     <string>12 бит</string>
                     </property>
                    </item>
                    <item>
                     <property name="text">
-                     <string>8 bit</string>
+                     <string>8 бит</string>
                     </property>
                    </item>
                   </widget>
@@ -729,7 +729,7 @@ background-color: grey;
                  <item row="1" column="1">
                   <widget class="QSpinBox" name="spinBox">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -745,13 +745,13 @@ background-color: grey;
                  <item row="2" column="0" colspan="2">
                   <widget class="QPushButton" name="pbFCView">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string>Get Frame</string>
+                    <string>Получить фрейм</string>
                    </property>
                   </widget>
                  </item>
@@ -792,14 +792,14 @@ background-color: grey;
               <item>
                <widget class="QPushButton" name="pbOpenFolder">
                 <property name="text">
-                 <string>Open folder</string>
+                 <string>Открыть каталог</string>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QPushButton" name="pbClearFrameFolder">
                 <property name="text">
-                 <string>Delete all</string>
+                 <string>Очистить</string>
                 </property>
                </widget>
               </item>
@@ -813,7 +813,7 @@ background-color: grey;
       </widget>
       <widget class="QWidget" name="tab_5">
        <attribute name="title">
-        <string>Terminal</string>
+        <string>Терминал4</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <property name="spacing">
@@ -873,7 +873,7 @@ background-color: grey;
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Open</string>
+                 <string>Открыть порт</string>
                 </property>
                </widget>
               </item>
@@ -886,7 +886,7 @@ background-color: grey;
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Close</string>
+                 <string>Закрыть порт</string>
                 </property>
                </widget>
               </item>
@@ -915,7 +915,7 @@ background-color: grey;
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Send</string>
+                 <string>Отправить</string>
                 </property>
                </widget>
               </item>
@@ -928,7 +928,7 @@ background-color: grey;
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Clear</string>
+                 <string>Очистить</string>
                 </property>
                </widget>
               </item>
@@ -1007,7 +1007,7 @@ background-color: grey;
       </widget>
       <widget class="QWidget" name="tab_6">
        <attribute name="title">
-        <string>log</string>
+        <string>Лог</string>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <property name="spacing">
