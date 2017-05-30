@@ -1067,7 +1067,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 
 	QFileInfo fi(fileName);
 	qint64 sz = fi.size();
-	ui.teJournal->addMessage("slReadRaw", QString("size %1").arg(sz));
+	ui.teJournal->addMessage("slReadRaw", QString("Размер %1").arg(sz));
 	if (sz!=221184){
 		ui.teJournal->addMessage("slReadRaw", "Неверный размер",1);
 		m_mtx.unlock();
