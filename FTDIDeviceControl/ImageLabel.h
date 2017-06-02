@@ -14,7 +14,7 @@ class CImageLabel : public QLabel
 
 public:
 	CImageLabel(QWidget * parent = 0, Qt::WindowFlags f = 0);
-	void setRawBuffer(const unsigned char* buffer, int width,int height);
+	void setRawBuffer(const unsigned char* buffer, int width,int height,QImage::Format fmt);
 
 protected:
 	virtual void resizeEvent(QResizeEvent * event);

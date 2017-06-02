@@ -16,6 +16,13 @@ QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 extern QString g_basePath;
 extern QString selfName;
 
+QString g_imodes[]=
+{
+	"mono16",
+	"mono12",
+	"mono8"
+};
+
 
 bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned short* pwLSHW, unsigned short* pwLSLW)
 {	
@@ -1012,9 +1019,14 @@ void FTDIDeviceControl::slViewRaw()
 		delete m_inputFile;
 		m_inputFile = 0;
 	}
+	int tImageMode = ui.cbImageMode->currentIndex();
 	QDateTime dt = QDateTime::currentDateTime();
-	m_fileName = m_framesPath + "/fr" + QString::number(++m_frameCnt) + dt.toString("_dd-MM-yyyy")+"_"+dt.toString("hh'h'mm'm'ss's'")+".raw" ; //QFileDialog::getSaveFileName(this, "save", "", "RBF Files (*.rbf)");
-	m_inputLength = 384*288*2;
+	m_fileName = m_framesPath + "/fr" + dt.toString("_dd-MM-yyyy")+"_"+dt.toString("hh'h'mm'm'ss's'_") + QString::number(++m_frameCnt)
+		+"_"+g_imodes[tImageMode]
+		+".raw" ;
+
+
+	m_inputLength = 384 * 288 * (tImageMode==IMODE_8 ? 1 : 2 );
 	m_inputFile = new QFile(m_fileName);
 	if (!m_inputFile->open(QIODevice::WriteOnly)) {
 		delete m_inputFile;
@@ -1035,7 +1047,7 @@ void FTDIDeviceControl::slViewRaw()
 	m_timer4WaitFrame->start(50000);
 	m_time.start();
 	m_gettingFile=true;
-	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x15, 0x01)!=0) { 
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x15, tImageMode+1)!=0) { 
 		ui.teJournal->addMessage("slReadRaw", QString("Ошибка 15: ") + m_lastErrorStr, 1);		
 		m_mtx.unlock();
 		return;
@@ -1064,9 +1076,25 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	}
 
 	QFileInfo fi(fileName);
+	QString tFName = fi.fileName(); 
+	
+
+	int tImageMode = IMODE_16;
+	quint64 desireSize = 384*288*2;
+	if (tFName.contains("mono12",Qt::CaseInsensitive))
+	{
+		tImageMode = IMODE_12;
+		desireSize = 384*288;
+	}
+	else if (tFName.contains("mono8",Qt::CaseInsensitive)){
+		tImageMode = IMODE_8;
+		desireSize = 384*288;
+	}
+	
 	qint64 sz = fi.size();
 	ui.teJournal->addMessage("slReadRaw", QString("Размер %1").arg(sz));
-	if (sz!=221184){
+		
+	if (sz!=desireSize){
 		ui.teJournal->addMessage("slReadRaw", "Неверный размер",1);
 		m_mtx.unlock();
 		return;
@@ -1083,13 +1111,22 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	for(int i = 0; i < 288; ++i)
 	{
 		for(int j = 0; j < 384; ++j){
-			f1.read((char*)(&tUS), 2);		
-			tBuffer[i*384+j] =(unsigned char)(tUS>>8);
+			if (tImageMode == IMODE_16){
+				f1.read((char*)(&tUS), 2);		
+				tBuffer[i*384+j] =(unsigned char)(tUS>>8);
+			}
+			else if (tImageMode == IMODE_12){
+				f1.read((char*)(&tUS), 2);		
+				tBuffer[i*384+j] =(unsigned char)(tUS>>4);
+			}
+			else {//8
+				f1.read((char*)&tBuffer[i*384+j], 1);						
+			}
 		}
 	}
 	f1.close();
 	ui.teJournal->addMessage("slReadRaw", "Чтение завершено");
-	ui.lView->setRawBuffer(tBuffer,384,288);
+	ui.lView->setRawBuffer(tBuffer, 384, 288, QImage::Format_Indexed8);
 	delete[]  tBuffer;
 
 	m_gettingFile = false;	

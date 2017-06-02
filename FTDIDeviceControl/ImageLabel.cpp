@@ -12,16 +12,19 @@ CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	m_arReal = 1;
 }
 
-void CImageLabel::setRawBuffer(const unsigned char* buffer, int width,int height)
+void CImageLabel::setRawBuffer(const unsigned char* buffer, int width,int height, QImage::Format fmt)
 {
 	if (m_img)
 		delete m_img;
 	m_rh = height;
 	m_rw = width;	
-	m_img = new QImage(width, height, QImage::Format_Indexed8/*QImage::Format_RGB888*/);
+	m_img = new QImage(width, height, fmt);
+	int tPixLen = 1;
+	if (fmt==QImage::Format_RGB888)
+		tPixLen=3;
 	for(int i = 0; i < m_img->height(); ++i)
 	{
-		memcpy(m_img->scanLine(i), &buffer[i* width * 1/*3*/], m_img->bytesPerLine());
+		memcpy(m_img->scanLine(i), &buffer[i* width * tPixLen], m_img->bytesPerLine());
 	}
 
 	m_arReal = m_rw/m_rh;

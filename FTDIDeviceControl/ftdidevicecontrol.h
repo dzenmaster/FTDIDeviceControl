@@ -28,6 +28,13 @@ enum
 
 enum
 {
+	IMODE_16,
+	IMODE_12,
+	IMODE_8
+};
+
+enum
+{
 	FILE_RBF = 0,
 	FILE_RAW = 1
 };
