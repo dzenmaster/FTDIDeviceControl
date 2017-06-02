@@ -37,7 +37,11 @@ private:
 	double	m_rh;
 	double	m_arReal; // aspect ratio real
 	double m_xStart;
-	double m_yStart;
+	double m_yStart;	
+	int m_xEnd;
+	int m_yEnd;
+	int m_destH;
+	int m_destW;
 	QPoint m_handPoint; // точка начала перемещения
 	QString m_sizeStr;
 	QString m_positionStr;

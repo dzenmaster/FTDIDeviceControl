@@ -1,5 +1,6 @@
 #include "ImageLabel.h"
 #include <QWheelEvent>
+#include <QImage>
 
 CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	: QLabel(parent, f), m_img(0), m_pixInPix(1),
@@ -11,6 +12,10 @@ CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	m_positionStr = "0x0";
 	m_posValueStr = "0x0";
 	m_scaleStr = "100%";
+	m_xEnd = 0;
+	m_yEnd = 0;
+	m_destH = 0;
+	m_destW = 0;
 }
 
 void CImageLabel::setRawBuffer(const unsigned char* aBuf, int aWid, int aHei, QImage::Format aFmt, Qt::TransformationMode aTM)
@@ -38,9 +43,8 @@ void CImageLabel::draw(bool calcPars)
 		return;
 	double h = size().height();
 	double w = size().width();
-	
-	if (calcPars) {
-		double arScr = w/h;
+	double arScr = w/h;
+	if (calcPars) {		
 		if (m_arReal<arScr)
 			m_pixInPix = m_rh/h;
 		else
@@ -49,22 +53,35 @@ void CImageLabel::draw(bool calcPars)
 		m_cx = m_rw/2;
 		m_cy = m_rh/2;	
 	}
-	double ww = w*m_pixInPix;
-	double hw = h*m_pixInPix;
+	int ww = w*m_pixInPix;
+	int hw = h*m_pixInPix;
 	m_xStart = m_cx - ww/2.;
 	m_yStart = m_cy - hw/2.;
 	if (m_xStart < 0)
 		m_xStart = 0;
-	else if (m_xStart > m_rw - ww)
+	else if (m_xStart > m_rw - ww - 0.5)
 		m_xStart = m_rw - ww;
 	if (m_yStart < 0)
 		m_yStart = 0;
-	else if (m_yStart > m_rh - hw)
+	else if (m_yStart > m_rh - hw - 0.5)
 		m_yStart = m_rh - hw;	
-	
-	QPixmap pix = QPixmap::fromImage(*m_img).copy( m_xStart, m_yStart, ww, hw).scaled(w, h, Qt::KeepAspectRatio, m_transMode);	
 
-	setPixmap(pix);
+	QPixmap pix = QPixmap::fromImage(*m_img).copy( m_xStart, m_yStart, ww, hw);
+	
+	m_destH = h;
+	m_destW = w;
+
+	if (m_arReal<arScr)
+		m_destW = pix.width() / m_pixInPix + 0.5;
+	else
+		m_destH = pix.height() / m_pixInPix + 0.5;
+
+	m_xEnd = m_xStart + pix.width() - 1;
+	m_yEnd = m_yStart + pix.height() - 1;
+
+	QPixmap pix2 = pix.scaled(m_destW, m_destH, Qt::IgnoreAspectRatio, m_transMode);	
+
+	setPixmap(pix2);
 	m_scaleStr=QString("%1%").arg(m_pixInPix*100/m_maxPixInPix,0,'f',0);
 	emit  newState(m_sizeStr, m_positionStr, m_posValueStr, m_scaleStr);
 }
@@ -91,6 +108,8 @@ void CImageLabel::mousePressEvent(QMouseEvent * e)
 
 void CImageLabel::mouseMoveEvent(QMouseEvent * e)
 {
+	if (!m_img)
+		return;
 	if (!m_mtx.tryLock())
 		return;	
 	QPoint tp = e->pos();
@@ -102,17 +121,26 @@ void CImageLabel::mouseMoveEvent(QMouseEvent * e)
 		m_cx = m_cx + tGap.x() * m_pixInPix; 
 		if (m_cx < w2)
 			m_cx = w2;
-		if (m_cx > m_rw - 1 - w2)
-			m_cx = m_rw - 1 - w2;
+		if (m_cx > m_rw - 0.5 - w2)
+			m_cx = m_rw - w2;
 		m_cy = m_cy + tGap.y() * m_pixInPix;
 		if (m_cy < h2)
 			m_cy = h2;
-		if (m_cy > m_rh - 1 - h2)
-			m_cy = m_rh - 1 - h2;
+		if (m_cy > m_rh - 0.5 - h2)
+			m_cy = m_rh - h2;
 		draw(false);
 	}
 
-	m_positionStr = QString("%1x%2").arg(getX(tp.x())).arg(getY(tp.y()));
+	int tCurX = getX(tp.x());
+	int tCurY = getY(tp.y());
+	
+	const uchar* b1 = m_img->bits();
+	int tInd=tCurX+tCurY*m_img->width();
+	if ((tInd>-1)&&(tInd<m_img->width()*m_img->height()))
+		m_posValueStr = QString("%1").arg(b1[tInd]);
+
+
+	m_positionStr = QString("%1x%2").arg(tCurX + 1).arg(tCurY + 1);	
 	emit  newState(m_sizeStr, m_positionStr, m_posValueStr, m_scaleStr);
 	m_mtx.unlock();
 }
@@ -143,22 +171,34 @@ void CImageLabel::wheelEvent(QWheelEvent * event)
 
 int CImageLabel::getY(int ay)
 {
+	double h = size().height();
 
-	return 1;
+	double startP = (h - m_destH)/2;
+	double endP = h - (h - m_destH)/2 - 1;
+
+	if (ay<startP)
+		return m_yStart;
+	if (ay>endP)
+		return m_yEnd;
+	int tY = m_yStart + (ay-startP) * m_pixInPix;
+	if (tY>m_yEnd)
+		return m_yEnd;
+	return   tY;
 }
 
 int CImageLabel::getX(int ax)
 {
-	double h = size().height();
 	double w = size().width();
-	
-	double arScr = w/h;
-	if (m_arReal < arScr) {
-		double ww = w*m_pixInPix;
-		if (ww > m_rw) {
-			int tX = m_xStart + ax * m_pixInPix - ((w*m_pixInPix - m_rw)/2);
-			return   tX;
-		}
-	}	
-	return  m_xStart + ax * m_pixInPix;		
+
+	double startP = (w - m_destW)/2;
+	double endP = w - (w - m_destW)/2 - 1;
+
+	if (ax<startP)
+		return m_xStart;
+	if (ax>endP)
+		return m_xEnd;
+	int tX = m_xStart + (ax-startP) * m_pixInPix;
+	if (tX>m_xEnd)
+		return m_xEnd;
+	return   tX;
 }
