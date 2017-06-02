@@ -1167,6 +1167,7 @@ void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem)
 	if (!aItem)
 		return;	
 	slDrawPicture(m_framesPath+"/"+aItem->text());
+	
 }
 
 void	FTDIDeviceControl::slClearFrameFolder()

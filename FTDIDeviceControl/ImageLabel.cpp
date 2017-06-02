@@ -4,7 +4,7 @@
 #include <QWheelEvent>
 
 CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
-	: QLabel(parent,f),m_img(0)
+	: QLabel(parent,f), m_img(0)
 {
 	m_moveEventInProgress = false;
 	m_pixInPix = 1;
@@ -39,7 +39,7 @@ void CImageLabel::draw(bool calcPars)
 	double h = size().height();
 	double w = size().width();
 
-	if (calcPars){
+	if (calcPars) {
 		double arScr = w/h;
 
 		if (m_arReal<arScr)
@@ -133,7 +133,7 @@ void CImageLabel::wheelEvent(QWheelEvent * event)
 {
 	if (!m_mtx.tryLock())
 		return;
-	double h = size().height();
+/*	double h = size().height();
 	double w = size().width();
 
 	double px=event->pos().x() - w/2;
@@ -151,7 +151,7 @@ void CImageLabel::wheelEvent(QWheelEvent * event)
 	if (m_cy < 0)
 		m_cy = 0;
 	if (m_cy > m_rh-1)
-		m_cy = m_rh-1;
+		m_cy = m_rh-1;*/
 
 	QPoint ad= event->angleDelta();
 	
@@ -163,8 +163,8 @@ void CImageLabel::wheelEvent(QWheelEvent * event)
 		m_pixInPix = m_maxPixInPix;
 	if (m_pixInPix < 0.09){
 		m_pixInPix = 0.1;
-		m_cx = prevCX;
-		m_cy = prevCY;
+	//	m_cx = prevCX;
+	//	m_cy = prevCY;
 	}
 	draw(false);
 	m_mtx.unlock();
