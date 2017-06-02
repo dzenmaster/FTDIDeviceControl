@@ -123,6 +123,8 @@ private slots:
 	void slClearFrameFolder();
 	void slOpenFolder();
 
+	void slNewImageState(const QString&, const QString&, const QString&, const QString&);
+
 signals:
 	void newRAWFrame(const QString&);
 };

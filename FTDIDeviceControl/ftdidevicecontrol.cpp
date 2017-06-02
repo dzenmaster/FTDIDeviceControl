@@ -114,6 +114,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.listWFrames, SIGNAL(itemClicked(QListWidgetItem *)),SLOT(slSelectedFrame(QListWidgetItem *)));
 	connect(ui.pbOpenFolder, SIGNAL(clicked()), SLOT(slOpenFolder()));
 
+	connect(ui.lView, SIGNAL(newState(const QString&, const QString&, const QString&, const QString&)), SLOT(slNewImageState(const QString&, const QString&, const QString&, const QString&)));
+
 	fillDeviceList();	
 }
 
@@ -1199,4 +1201,12 @@ void FTDIDeviceControl::slOpenFolder()
 {
 	QString tdir = QDir::toNativeSeparators(m_framesPath);
 	QProcess::execute("Explorer "+ tdir);
+}
+
+void FTDIDeviceControl::slNewImageState(const QString& aSz, const QString& aPos, const QString& aPosVal, const QString& aScale)
+{
+	ui.leSize->setText(aSz);
+	ui.lePosition->setText(aPos);
+	ui.lePosValue->setText(aPosVal);
+	ui.leScale->setText(aScale);
 }
