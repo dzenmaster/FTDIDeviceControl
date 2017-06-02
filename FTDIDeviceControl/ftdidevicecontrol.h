@@ -42,8 +42,8 @@ public:
 
 protected:
 	virtual void	closeEvent(QCloseEvent * event);
-	virtual void	resizeEvent(QResizeEvent * event);
-	virtual void	showEvent(QShowEvent * event);
+//	virtual void	resizeEvent(QResizeEvent * event);
+//	virtual void	showEvent(QShowEvent * event);
 
 
 private:
@@ -65,8 +65,8 @@ private:
 	quint32 m_startAddr;
 	quint32 m_R3;
 	bool m_cancel;
-	unsigned char m_rawDataMono8[288][384];//test
-	QImage m_img;
+	//unsigned char m_rawDataMono8[288][384];//test
+	//QImage m_img;
 	bool m_gettingFile;
 	QTime m_time;
 

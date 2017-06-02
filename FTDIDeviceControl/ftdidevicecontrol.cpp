@@ -46,9 +46,10 @@ bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned sho
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
-	m_img(384, 288, QImage::Format_Indexed8), m_timer4WaitFrame(0),m_frameCnt(0)
+	//m_img(384, 288, QImage::Format_Indexed8),
+	m_timer4WaitFrame(0),m_frameCnt(0)
 {
-	m_img.fill(127);//init
+	//m_img.fill(127);//init
 	ui.setupUi(this);
 	//version
 	unsigned short v1,v2,v3,v4;
@@ -993,9 +994,6 @@ void FTDIDeviceControl::slCancelUpdate()
 	m_cancel=true;
 }
 
-
-
-//for test
 void FTDIDeviceControl::slViewRaw()
 {
 	if (!m_mtx.tryLock())
@@ -1081,23 +1079,19 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	}
 	
 	unsigned short tUS=0;
+	unsigned char* tBuffer = new unsigned char[288*384];
 	for(int i = 0; i < 288; ++i)
 	{
 		for(int j = 0; j < 384; ++j){
-			f1.read((char*)(&tUS), 2);
-			m_rawDataMono8[i][j]=(unsigned char)(tUS>>8);
+			f1.read((char*)(&tUS), 2);		
+			tBuffer[i*384+j] =(unsigned char)(tUS>>8);
 		}
 	}
 	f1.close();
 	ui.teJournal->addMessage("slReadRaw", "Чтение завершено");
-	//QImage m_img(384, 288, QImage::Format_Indexed8); //640,480 size picture.	
-	for(int i = 0; i < m_img.height(); ++i)
-	{
-		 memcpy(m_img.scanLine(i), m_rawDataMono8[i], m_img.bytesPerLine());
-	}
-	//ui.lView->setScaledContents(true);
-	//ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size(),Qt::KeepAspectRatio));
-	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+	ui.lView->setRawBuffer(tBuffer,384,288);
+	delete[]  tBuffer;
+
 	m_gettingFile = false;	
 
 	int et = m_time.elapsed();
@@ -1129,16 +1123,6 @@ void FTDIDeviceControl::slWaitFrameFinished() // timeout in waiting frame
 	ui.tabWidget->setEnabled(true);
 	QMessageBox::critical(this,"slWaitFrameFinished","Таймаут");	
 	m_mtx.unlock();
-}
-
-void	FTDIDeviceControl::resizeEvent(QResizeEvent * event)
-{	
-	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-}
-
-void	FTDIDeviceControl::showEvent(QShowEvent * event)
-{
-	ui.lView->setPixmap(QPixmap::fromImage(m_img).scaled(ui.lView->size().width()-2, ui.lView->size().height()-2, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem)
