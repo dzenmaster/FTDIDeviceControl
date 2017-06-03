@@ -71,6 +71,15 @@
     <ClCompile Include="Journal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_ImageLabel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_ImageLabel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageLabel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ftdidevicecontrol.h">
@@ -86,6 +95,9 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="Journal.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="ImageLabel.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>

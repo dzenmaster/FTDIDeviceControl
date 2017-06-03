@@ -16,13 +16,24 @@ CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	m_yEnd = 0;
 	m_destH = 0;
 	m_destW = 0;
+	m_origBuf = 0;
 }
 
-void CImageLabel::setRawBuffer(const unsigned char* aBuf, int aWid, int aHei, QImage::Format aFmt, Qt::TransformationMode aTM)
+void CImageLabel::setRawBuffer(const unsigned char* aBuf, const unsigned short* aOrigBuf, int aWid, int aHei, QImage::Format aFmt, Qt::TransformationMode aTM)
 {
+	if (m_origBuf){
+		delete[] m_origBuf;
+		m_origBuf = 0;
+	}
+	if (aOrigBuf){
+		m_origBuf = new unsigned short[aWid*aHei];
+		memcpy(m_origBuf,aOrigBuf,aWid*aHei*sizeof(unsigned short));
+	}
+
 	m_transMode = aTM;
 	if (m_img)
 		delete m_img;
+	
 
 	m_rh = aHei;
 	m_rw = aWid;	
@@ -134,10 +145,10 @@ void CImageLabel::mouseMoveEvent(QMouseEvent * e)
 	int tCurX = getX(tp.x());
 	int tCurY = getY(tp.y());
 	
-	const uchar* b1 = m_img->bits();
+	//const uchar* b1 = m_img->bits();
 	int tInd=tCurX+tCurY*m_img->width();
-	if ((tInd>-1)&&(tInd<m_img->width()*m_img->height()))
-		m_posValueStr = QString("%1").arg(b1[tInd]);
+	if ((m_origBuf)&&(tInd>-1)&&(tInd<m_img->width()*m_img->height()))
+		m_posValueStr = QString("%1 0x%2").arg(m_origBuf[tInd]).arg(m_origBuf[tInd],0, 16);
 
 
 	m_positionStr = QString("%1x%2").arg(tCurX + 1).arg(tCurY + 1);	

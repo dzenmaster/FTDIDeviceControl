@@ -633,6 +633,12 @@ background-color: grey;
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>110</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
                 </property>
@@ -652,6 +658,12 @@ background-color: grey;
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>110</width>
+                  <height>16777215</height>
+                 </size>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -675,7 +687,7 @@ background-color: grey;
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>70</width>
+                  <width>100</width>
                   <height>16777215</height>
                  </size>
                 </property>

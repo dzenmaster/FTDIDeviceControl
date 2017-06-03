@@ -1110,25 +1110,29 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	
 	unsigned short tUS=0;
 	unsigned char* tBuffer = new unsigned char[288*384];
+	unsigned short* tBuffer2 = new unsigned short[288*384];
 	for(int i = 0; i < 288; ++i)
 	{
 		for(int j = 0; j < 384; ++j){
 			if (tImageMode == IMODE_16){
-				f1.read((char*)(&tUS), 2);		
+				f1.read((char*)(&tUS), 2);	
+				tBuffer2[i*384+j] = tUS;
 				tBuffer[i*384+j] =(unsigned char)(tUS>>8);
 			}
 			else if (tImageMode == IMODE_12){
-				f1.read((char*)(&tUS), 2);		
+				f1.read((char*)(&tUS), 2);	
+				tBuffer2[i*384+j] = tUS;
 				tBuffer[i*384+j] =(unsigned char)(tUS>>4);
 			}
-			else {//8
-				f1.read((char*)&tBuffer[i*384+j], 1);						
+			else {//8				
+				f1.read((char*)&tBuffer[i*384+j], 1);	
+				tBuffer2[i*384+j] = tBuffer[i*384+j];
 			}
 		}
 	}
 	f1.close();
 	ui.teJournal->addMessage("slReadRaw", "Чтение завершено");
-	ui.lView->setRawBuffer(tBuffer, 384, 288, QImage::Format_Indexed8);
+	ui.lView->setRawBuffer(tBuffer, tBuffer2, 384, 288, QImage::Format_Indexed8);
 	delete[]  tBuffer;
 
 	m_gettingFile = false;	

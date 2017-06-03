@@ -14,7 +14,7 @@ class CImageLabel : public QLabel
 
 public:
 	CImageLabel(QWidget * parent = 0, Qt::WindowFlags f = 0);
-	void setRawBuffer(const unsigned char* aBuf, int aWid,int aHei, QImage::Format aFmt, Qt::TransformationMode aTM = Qt::FastTransformation);
+	void setRawBuffer(const unsigned char* aBuf, const unsigned short* aOrigBuf, int aWid,int aHei, QImage::Format aFmt, Qt::TransformationMode aTM = Qt::FastTransformation);
 
 protected:
 	virtual void resizeEvent(QResizeEvent*);
@@ -27,6 +27,7 @@ protected:
 private:
 	QMutex	m_mtx;
 	QImage* m_img;
+	unsigned short* m_origBuf;
 	Qt::TransformationMode m_transMode;
 
 	double m_pixInPix; // пикселей из jpg в пикселе экрана
