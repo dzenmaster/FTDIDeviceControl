@@ -89,10 +89,9 @@ private:
 	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
 	bool setRbfFileName(const QString&);
 	void toLog(const QString& logStr);
-	void updateFramesList();
-
 
 private slots:
+	void updateFramesList();
 	void slShowTerminal(bool);
 
 	void slSend();
@@ -119,7 +118,7 @@ private slots:
 
 	void slWaitFrameFinished();
 
-	void slSelectedFrame(QListWidgetItem *);
+	void slSelectedFrame(QListWidgetItem *,QListWidgetItem *);
 	void slClearFrameFolder();
 	void slOpenFolder();
 
@@ -127,6 +126,7 @@ private slots:
 
 signals:
 	void newRAWFrame(const QString&);
+	void sigUpdateList();
 };
 
 #endif // FTDIDEVICECONTROL_H

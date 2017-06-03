@@ -111,7 +111,9 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 
 	connect(ui.pbFCView,SIGNAL(clicked()), SLOT(slViewRaw()));
 	connect(this,SIGNAL(newRAWFrame(const QString&)),SLOT(slDrawPicture(const QString&)));
-	connect(ui.listWFrames, SIGNAL(itemClicked(QListWidgetItem *)),SLOT(slSelectedFrame(QListWidgetItem *)));
+	connect(this,SIGNAL(sigUpdateList()),SLOT(updateFramesList()));
+	//connect(ui.listWFrames, SIGNAL(itemClicked(QListWidgetItem *)),SLOT(slSelectedFrame(QListWidgetItem *)));
+	connect(ui.listWFrames, SIGNAL(currentItemChanged(QListWidgetItem *,QListWidgetItem *)),SLOT(slSelectedFrame(QListWidgetItem *,QListWidgetItem *)));
 	connect(ui.pbOpenFolder, SIGNAL(clicked()), SLOT(slOpenFolder()));
 
 	connect(ui.lView, SIGNAL(newState(const QString&, const QString&, const QString&, const QString&)), SLOT(slNewImageState(const QString&, const QString&, const QString&, const QString&)));
@@ -399,6 +401,7 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 						else if (m_fileType==FILE_RAW) {
 							ui.teJournal->addMessage("slNewKadr", "Получен RAW");
 							emit newRAWFrame(m_fileName);
+							emit sigUpdateList();
 						}
 					}
 				}				
@@ -1139,7 +1142,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 
 	int et = m_time.elapsed();
 	ui.teJournal->addMessage("slReadRaw", QString("Время получения фрейма %1").arg(et));
-	updateFramesList();
+	//updateFramesList();
 	m_mtx.unlock();
 }
 
@@ -1168,11 +1171,11 @@ void FTDIDeviceControl::slWaitFrameFinished() // timeout in waiting frame
 	m_mtx.unlock();
 }
 
-void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem)
+void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem, QListWidgetItem * aItemPrev)
 {
 	if (!aItem)
 		return;	
-	slDrawPicture(m_framesPath+"/"+aItem->text());
+	slDrawPicture(m_framesPath+"/"+aItem->text());	
 	
 }
 
