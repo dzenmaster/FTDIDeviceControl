@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QProcess>
 
+
 #include "WaitingThread.h"
 
 #include "PswDlg.h"
@@ -1041,7 +1042,6 @@ void FTDIDeviceControl::slViewRaw()
 		+"_"+g_imodes[tImageMode]
 		+".raw" ;
 
-
 	m_inputLength = 384 * 288 * (tImageMode==IMODE_8 ? 1 : 2 );
 	m_inputFile = new QFile(m_fileName);
 	if (!m_inputFile->open(QIODevice::WriteOnly)) {
@@ -1092,8 +1092,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	}
 
 	QFileInfo fi(fileName);
-	QString tFName = fi.fileName(); 
-	
+	QString tFName = fi.fileName(); 	
 
 	int tImageMode = IMODE_16;
 	quint64 desireSize = 384*288*2;
@@ -1153,7 +1152,6 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 
 	int et = m_time.elapsed();
 	ui.teJournal->addMessage("slReadRaw", QString("Время получения фрейма %1").arg(et));
-	//updateFramesList();
 	m_mtx.unlock();
 }
 
@@ -1186,8 +1184,7 @@ void	FTDIDeviceControl::slSelectedFrame(QListWidgetItem * aItem, QListWidgetItem
 {
 	if (!aItem)
 		return;	
-	slDrawPicture(m_framesPath+"/"+aItem->text());	
-	
+	slDrawPicture(m_framesPath+"/"+aItem->text());		
 }
 
 void	FTDIDeviceControl::slClearFrameFolder()
@@ -1207,10 +1204,8 @@ void	FTDIDeviceControl::slClearFrameFolder()
 
 	while(i!=fiList.end()) {
 		QString fn = (*i).fileName();
-		if ((fn!=".")&&(fn!="..")){
-		//	ui.listWFrames->addItem((*i).fileName());
-			QFile::remove((*i).absoluteFilePath());
-		}
+		if ((fn!=".")&&(fn!=".."))		
+			QFile::remove((*i).absoluteFilePath());		
 		++i;
 	}
 }	

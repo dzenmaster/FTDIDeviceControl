@@ -254,7 +254,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -857,7 +857,7 @@ background-color: grey;
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string>Mode</string>
+                    <string>Режим</string>
                    </property>
                   </widget>
                  </item>
@@ -871,13 +871,13 @@ background-color: grey;
                    </property>
                    <property name="minimumSize">
                     <size>
-                     <width>80</width>
+                     <width>0</width>
                      <height>0</height>
                     </size>
                    </property>
                    <item>
                     <property name="text">
-                     <string>RAW 16 бит</string>
+                     <string>16 бит</string>
                     </property>
                    </item>
                    <item>
@@ -895,7 +895,7 @@ background-color: grey;
                  <item row="1" column="0">
                   <widget class="QLabel" name="label_9">
                    <property name="text">
-                    <string>Number of frames</string>
+                    <string>Количество фреймов</string>
                    </property>
                   </widget>
                  </item>

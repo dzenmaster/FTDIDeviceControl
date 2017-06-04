@@ -54,6 +54,9 @@ private:
 	int getX(int ax);
 	int getY(int ay);
 
+private slots:
+	void showContextMenuForFrame(const QPoint& aPos);
+	void exportFrame();
 
 signals:
 	void newState(const QString& aSz, const QString& aPos, const QString& aPosVal, const QString& aScale);

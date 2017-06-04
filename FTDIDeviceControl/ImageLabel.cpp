@@ -1,6 +1,8 @@
 #include "ImageLabel.h"
 #include <QWheelEvent>
 #include <QImage>
+#include <QMenu>
+#include <QFileDialog>
 
 CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	: QLabel(parent, f), m_img(0), m_pixInPix(1),
@@ -17,6 +19,10 @@ CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	m_destH = 0;
 	m_destW = 0;
 	m_origBuf = 0;
+
+	setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(showContextMenuForFrame(const QPoint&)));
+
 }
 
 void CImageLabel::setRawBuffer(const unsigned char* aBuf, const unsigned short* aOrigBuf, int aWid, int aHei, QImage::Format aFmt, Qt::TransformationMode aTM)
@@ -212,4 +218,29 @@ int CImageLabel::getX(int ax)
 	if (tX>m_xEnd)
 		return m_xEnd;
 	return   tX;
+}
+
+void  CImageLabel::showContextMenuForFrame(const QPoint& aPos)
+{
+	if (!m_img)
+		return;
+	QPoint globalPos = mapToGlobal(aPos);
+	QMenu myMenu;
+	myMenu.addAction("Экспорт", this, SLOT(exportFrame()));
+	myMenu.exec(globalPos);
+}
+
+void  CImageLabel::exportFrame()//JPEG BMP
+{
+	if (!m_img)
+		return;
+	QString tFileName = QFileDialog::getSaveFileName(this, "Сохранить", "", "BMP (*.bmp);;JPEG (*.jpg)");
+	if (tFileName.isEmpty())
+		return;
+	QImage tImage = m_img->convertToFormat(QImage::Format_RGB888);
+	if (tFileName.right(3).compare("JPG",Qt::CaseInsensitive)==0)
+		tImage.save(tFileName,"JPG",85);
+	else
+		tImage.save(tFileName,"BMP");
+
 }
