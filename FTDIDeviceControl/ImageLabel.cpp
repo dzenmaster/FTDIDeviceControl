@@ -89,12 +89,17 @@ void CImageLabel::draw(bool calcPars)
 	m_destW = w;
 
 	if (m_arReal<arScr)
-		m_destW = pix.width() / m_pixInPix + 0.5;
+		m_destW = pix.width() / m_pixInPix + 0.5;	
 	else
 		m_destH = pix.height() / m_pixInPix + 0.5;
 
 	m_xEnd = m_xStart + pix.width() - 1;
 	m_yEnd = m_yStart + pix.height() - 1;
+
+	if (ww<m_rw)//precise secure
+		m_destW = w;
+	if (hw<m_rh)//precise secure
+		m_destH = h;
 
 	QPixmap pix2 = pix.scaled(m_destW, m_destH, Qt::IgnoreAspectRatio, m_transMode);	
 
