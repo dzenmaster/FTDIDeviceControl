@@ -89,6 +89,7 @@ private:
 	int sendPacket(unsigned char aType, quint16 aLen, unsigned char aRdWr,quint16 aAddr, quint32 aData = 0);
 	bool setRbfFileName(const QString&);
 	void toLog(const QString& logStr);
+	void setDebugMode(bool);
 
 private slots:
 	void updateFramesList();
@@ -123,6 +124,9 @@ private slots:
 	void slOpenFolder();
 
 	void slNewImageState(const QString&, const QString&, const QString&, const QString&);
+
+	void slDebugMode(bool);
+	void onPassword();
 
 signals:
 	void newRAWFrame(const QString&);

@@ -90,6 +90,13 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
+        <widget class="QCheckBox" name="cbDebugMode">
+         <property name="text">
+          <string>Режим отладки</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="cbShowTerminal">
          <property name="text">
           <string>Показать терминал</string>
@@ -247,7 +254,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -422,6 +429,13 @@
                 </property>
                 <property name="text">
                  <string>size</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pbPass">
+                <property name="text">
+                 <string>Set Password</string>
                 </property>
                </widget>
               </item>

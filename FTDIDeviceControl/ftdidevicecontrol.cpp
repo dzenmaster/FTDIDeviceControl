@@ -11,10 +11,13 @@
 
 #include "WaitingThread.h"
 
+#include "PswDlg.h"
+
 QSettings g_Settings("FTDIDeviceControl","FTDIDeviceControl");
 
 extern QString g_basePath;
 extern QString selfName;
+extern QString GFTDIPswFileName;
 
 QString g_imodes[]=
 {
@@ -53,7 +56,6 @@ bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned sho
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
-	//m_img(384, 288, QImage::Format_Indexed8),
 	m_timer4WaitFrame(0),m_frameCnt(0)
 {
 	//m_img.fill(127);//init
@@ -82,6 +84,13 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 //	ui.tabWidget->setEnabled(false);
 
 	setRbfFileName(g_Settings.value("rbfFileName", "").toString());
+	
+	bool tDebugMode = false;
+	if (g_Settings.contains("debugMode")){
+		tDebugMode = g_Settings.value("debugMode").toBool();
+	}
+	setDebugMode(tDebugMode);
+	ui.cbDebugMode->setChecked(tDebugMode);
 
 	m_buff[0]=0xA5;
 	m_buff[1]=0x5A;
@@ -117,6 +126,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbOpenFolder, SIGNAL(clicked()), SLOT(slOpenFolder()));
 
 	connect(ui.lView, SIGNAL(newState(const QString&, const QString&, const QString&, const QString&)), SLOT(slNewImageState(const QString&, const QString&, const QString&, const QString&)));
+	connect(ui.cbDebugMode, SIGNAL(toggled(bool)), SLOT(slDebugMode(bool)));	
+	connect(ui.pbPass,SIGNAL(clicked()),SLOT(onPassword()) );
 
 	fillDeviceList();	
 }
@@ -1216,4 +1227,32 @@ void FTDIDeviceControl::slNewImageState(const QString& aSz, const QString& aPos,
 	ui.lePosition->setText(aPos);
 	ui.lePosValue->setText(aPosVal);
 	ui.leScale->setText(aScale);
+}
+
+void FTDIDeviceControl::setDebugMode(bool tDM)
+{
+	ui.cbShowTerminal->setVisible(tDM);
+	ui.gbDebug->setVisible(tDM);
+}
+
+void FTDIDeviceControl::slDebugMode(bool tDM)
+{	
+	if (tDM) { // check password
+		QString tPswPath = g_basePath + GFTDIPswFileName;
+		if (QFile::exists(tPswPath)) {
+			CPswDlg tPswDlg(false,this);				
+			if (tPswDlg.exec()!=QDialog::Accepted) {
+				ui.cbDebugMode->setChecked(false);
+				return;
+			}
+		}
+	}
+	setDebugMode(tDM);
+	g_Settings.setValue("debugMode",tDM);
+}
+
+void FTDIDeviceControl::onPassword()
+{
+	CPswDlg tPswDlg(true, this);				
+	tPswDlg.exec();
 }
