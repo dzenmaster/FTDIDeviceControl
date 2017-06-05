@@ -1025,6 +1025,7 @@ void FTDIDeviceControl::slViewRaw()
 	if ( m_handle == NULL ) {		
 		m_lastErrorStr = "Необходимо открыть порт";
 		QMessageBox::critical(this, "Необходимо открыть порт","Необходимо открыть порт");
+		m_mtx.unlock();
 		return;
 	}
 
@@ -1099,7 +1100,7 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	if (tFName.contains("mono12",Qt::CaseInsensitive))
 	{
 		tImageMode = IMODE_12;
-		desireSize = 384*288;
+		desireSize = 384*288*2;
 	}
 	else if (tFName.contains("mono8",Qt::CaseInsensitive)){
 		tImageMode = IMODE_8;

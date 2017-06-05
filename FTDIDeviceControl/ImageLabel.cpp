@@ -244,8 +244,7 @@ void  CImageLabel::exportFrame()//JPEG BMP
 		return;
 	QImage tImage = m_img->convertToFormat(QImage::Format_RGB888);
 	if (tFileName.right(3).compare("JPG",Qt::CaseInsensitive)==0)
-		tImage.save(tFileName,"JPG",85);
+		bool res = tImage.save(tFileName,"JPG",85);	
 	else
-		tImage.save(tFileName,"BMP");
-
+		bool res = tImage.save(tFileName,"BMP");
 }
