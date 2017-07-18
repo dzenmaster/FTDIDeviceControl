@@ -2,7 +2,7 @@
 #include "sys/alt_stdio.h"
 #include "alt_types.h"
 #include "system.h"
-
+#include "sw_regs.h"
 ///
 
 /// Pakage types
@@ -32,14 +32,6 @@ enum {
 
 ///
 
-#pragma pack(push, 1) //packet struct
-typedef struct
-{
-	alt_u8  f_RD_WRn;
-	alt_u16 addr;
-	alt_u32 data;
-}sw_reg_t;
-#pragma pack(pop)
 
 typedef sw_reg_t  *sw_reg_xp;
 

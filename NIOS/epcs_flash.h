@@ -5,14 +5,16 @@
  *      Author: artemv
  */
 #include "alt_types.h"
-
+#include "sw_regs.h"
 #define EPCS_OK 0
 #define EPCS_ERR 1
 
 
-#define EPCS_APL_BOOT_ADDR 0x400000 // sector 64 *0x100000
-//#define EPCS_APL_BOOT_ADDR 0
+//#define EPCS_APL_BOOT_ADDR 0x400000 // sector 64 *0x100000 for EPCS64
+#define EPCS_APL_BOOT_ADDR 0x800000 // sector 32 *0x100000 for EPCS128
 
+//#define EPCS_APL_BOOT_ADDR 0
+#define EPCS_APL_BOOT_ADDR_APL3 (14 *0x100000)
 
 extern alt_u8 g_EPCS_STATE;
 
@@ -25,15 +27,6 @@ enum {
 	EPCS_STATE_READ_FW  = 0x2
 };
 
-// EPCS RG addresses
-enum {
- EPCS_ID_ADDR 			 = 0x0,
- EPCS_START_ADDRESS_ADDR = 0x1,
- EPCS_TOTAL_LENTH_ADDR 	 = 0x2,
- EPCS_COMMANDS_ADDR      = 0x3,
- EPCS_APL_FROM_ADDR      = 0x4
-};
-
 // EPCS commands
 enum {
 	EPCS_CMD_NULL				= 0x0,
@@ -44,16 +37,7 @@ enum {
 	EPCS_CMD_READ_FIRMWARE		= 0x5
 };
 
-#pragma pack(push, 1) //packet struct
-typedef struct
-{
-	alt_u8  f_RD_WRn;
-	alt_u16 addr;
-	alt_u32 data;
-}epcs_reg_t;
-#pragma pack(pop)
-
-typedef epcs_reg_t  *epcs_reg_xp;
+typedef sw_reg_t  *epcs_reg_xp;
 
 static const unsigned char BitReverseTable256[] =
 {
@@ -75,7 +59,7 @@ static const unsigned char BitReverseTable256[] =
   0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
 
-alt_u8 epcs_commands(epcs_reg_t *epcs_area);
+alt_u8 epcs_commands(sw_reg_t *epcs_area);
 void epcs_read_flash_id(void);
 alt_u8 epcs_run_cmd(void);
 alt_u8 epcs_write_fw(alt_u8*  src_data,alt_u16 len);
