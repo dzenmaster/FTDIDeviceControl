@@ -61,6 +61,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 {
 	//m_img.fill(127);//init
 	ui.setupUi(this);
+
 	//version
 	unsigned short v1,v2,v3,v4;
 	if (getVersionInfo(&v1,&v2,&v3,&v4))
@@ -472,7 +473,7 @@ bool FTDIDeviceControl::slWriteFlash()
 		m_mtx.unlock();
 		return false;
 	}
-	if (m_flashID!=0x16){
+	if ((m_flashID<1)||(m_flashID==0xFFFF)) {  //(m_flashID!=0x16){
 		ui.teJournal->addMessage("slWriteFlash", QString("Неверный flash ID %1").arg(m_flashID), 1);
 		QMessageBox::critical(this, "wrong flash ID", "wrong flash ID");
 		m_mtx.unlock();
@@ -675,7 +676,7 @@ bool FTDIDeviceControl::slEraseFlash()
 		m_mtx.unlock();
 		return false;
 	}
-	if (m_flashID!=0x16){
+	if ((m_flashID<1)||(m_flashID==0xFFFF)) {  //(m_flashID!=0x16){
 		QMessageBox::critical(this,"Неверный flash ID","Неверный flash ID");
 		m_mtx.unlock();
 		return false;	
@@ -689,7 +690,7 @@ bool FTDIDeviceControl::slEraseFlash()
 			m_mtx.unlock();
 			return false;
 		}
-		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x10000 + m_startAddr)!=0)	{
+		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x01, i* 0x40000 + m_startAddr)!=0)	{ //раньше 0x10000
 			//ui.teReceive->append("error : " + m_lastErrorStr);
 			ui.teJournal->addMessage("slEraseFlash", QString("Ошибка 1 : ") + m_lastErrorStr, 1);
 			break;
