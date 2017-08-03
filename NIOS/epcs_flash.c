@@ -8,8 +8,8 @@
 #include "system.h"
 #include "epcs_flash.h"
 #include "alt_types.h"
-#include "alt_types.h"
 #include "epcs_commands.h"
+#include "sw_regs.h"
 
 
 static alt_u32 epcs_id_rg = 0;
@@ -19,7 +19,8 @@ static alt_u32 epcs_cmd_rg= 0x00;
 alt_u8 g_EPCS_STATE;
 
 
-alt_u8 epcs_commands(epcs_reg_t *epcs_area)
+
+alt_u8 epcs_commands(sw_reg_t *epcs_area)
 {
 
 	if(epcs_area->f_RD_WRn == 0x1) // read register
@@ -82,9 +83,14 @@ alt_u8 epcs_commands(epcs_reg_t *epcs_area)
 
 void epcs_read_flash_id(void)
 {
-
+/*  // For EPCS16,32,64
 	epcs_id_rg = epcs_read_electronic_signature(EPCS_FLASH_CONTROLLER_0_BASE+
 											 	EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET);
+*/
+	epcs_id_rg = epcs_read_device_id(EPCS_FLASH_CONTROLLER_0_BASE+
+		 	EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET); // two bytes mode for EPCS128
+
+	epcs_id_rg &=0xFFFF; // needs only two bytes
 
 	UartCmd_Send_SW_reg_val(EPCS_ID_ADDR,epcs_id_rg);
 	dbg_printf("[EPCS] Read Flash ID -> %x\n\r",epcs_id_rg);
@@ -102,13 +108,16 @@ alt_u8 epcs_run_cmd(void)
 
 		case EPCS_CMD_READ				: break;
 
-		case EPCS_CMD_ERASE_SECTOR		:
-			epcs_sector_erase(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
-							  epcs_start_address_rg,
-							  0x0);
-			epcs_cmd_rg = EPCS_CMD_NULL;
-			dbg_printf("[EPCS] SECTOR ERASE \n\r");
-			break;
+		case EPCS_CMD_ERASE_SECTOR		:	if(epcs_start_address_rg >= EPCS_APL_BOOT_ADDR)
+											{
+											epcs_sector_erase(EPCS_FLASH_CONTROLLER_0_BASE+EPCS_FLASH_CONTROLLER_0_REGISTER_OFFSET,
+															  epcs_start_address_rg,
+															  0x0);
+											epcs_cmd_rg = EPCS_CMD_NULL;
+											dbg_printf("[EPCS] SECTOR ERASE \n\r");
+											}
+											else dbg_printf("[EPCS] ERASE ERROR \n\r");
+											break;
 
 		case EPCS_CMD_UPDATE_FIRMWARE	: g_EPCS_STATE = EPCS_STATE_WRITE_FW; break;
 

@@ -8,6 +8,10 @@
 #ifndef RSU_H_
 #define RSU_H_
 #include "alt_types.h"
+#include "sw_regs.h"
+
+
+
 // RSU addresses
 
 #define ReconfigSrcAddr  (0x0  << 2)
@@ -30,11 +34,6 @@
 #define	PrevStateReg2Addr     0x17 << 2
 #define	WatchDogValueAddr     0x02 << 2
 
-
-
-
-
-
 #define ReconfigTrigCondition  (0x7 << 2)
 
 
@@ -46,8 +45,8 @@
 
 #define WdRegValue 		0x1FF
 
-
 void RsuInit (alt_u8 CurImage);
 void RsuWdReset(void);
+void RsuCommands (sw_reg_t *sw_reg_t);
 
 #endif /* RSU_H_ */

@@ -86,6 +86,7 @@
 #include "uart_cmd_pkg_process.h"
 #include "epcs_flash.h"
 #include "RSU.h"
+#include "FrmCapt.h"
 
 #define		CurImage  0xF// 0xF or 0xA
 
@@ -141,7 +142,7 @@ int main()
 
 		 if((uart_status & 0x8)>>3)
 		 {
-			 dbg_printf("[UART] Write to RX FIFO ERROR!\n\r");
+		//	 dbg_printf("[UART] Write to TX FIFO ERROR!\n\r");
 
 		 }
 	 }
@@ -183,6 +184,63 @@ int main()
 		 {
 			 process_epcs_flash(g_EPCS_STATE); // firmware area
 		 }
+	 else if(g_FRMCAPT_STATE == FRMCAPT_RUN)
+	 {
+		 const alt_u32 FRM_SIZE = 384*288*2;
+		 alt_u32 FrmCnt = FRM_SIZE;
+		 alt_u8 buf[1024];
+		 alt_u16 i;
+		 alt_u32 data;
+		 alt_u16 LineVal;
+		 alt_u16 PixelVal;
+		 alt_u16 Val;
+		 data = 0;
+
+		 while(FrmCnt >= 1024)
+		 {
+			 RsuWdReset();
+			 for(i = 0; i< 1024; i+=2)
+			 {
+				 LineVal = data/(384*2);
+
+				 PixelVal = (data - (384*2*LineVal))/2;
+
+				 if(PixelVal >= 0 && PixelVal < 96)
+				 {
+					 Val = 0x0000;
+					 buf[i]   =  Val;
+					 buf[i+1] = Val>>8;
+				 }
+				 else if(PixelVal >= 96 && PixelVal < 96*2)
+				 {
+					 Val = 0x4444;
+					 buf[i]   =  Val;
+					 buf[i+1] = Val>>8;
+				 }
+				 else if(PixelVal >= 96*2 && PixelVal < 96*3)
+				 {
+					 Val = 0xAAAAA;
+					 buf[i]   =  Val;
+					 buf[i+1] = Val>>8;
+				 }
+				 else if(PixelVal >= 96*3 && PixelVal < 96*4)
+				 {
+					 Val = 0xDFFF;
+					 buf[i]   =  Val;
+					 buf[i+1] = Val>>8;
+				 }
+
+
+
+				 data+=2;
+			 }
+			 UartCmd_Send_Stream(&buf,1024);
+			 FrmCnt -= 1024;
+
+		 }
+		 if(FrmCnt > 0) UartCmd_Send_Stream(&buf,FrmCnt);
+		 g_FRMCAPT_STATE = FRMCAPT_NULL;
+	 }
   }
 
 

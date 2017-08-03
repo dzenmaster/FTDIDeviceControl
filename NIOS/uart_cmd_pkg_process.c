@@ -6,6 +6,7 @@
 #include "uart_cmd_pkg_process.h"
 #include "epcs_flash.h"
 #include "RSU.h"
+#include "sw_regs.h"
 
 ///
 
@@ -19,7 +20,7 @@ void process_info_packet(void)
 		case 1 : UartCmd_Send_SN(0x2);		    		break;
 		case 2 : UartCmd_Send_FirmWare_revision(0x3); 	break;
 		case 3 : UartCmd_Send_SoftWare_revision(0x4); 	break;
-//		default :  alt_putstr("Unknown info parameter\n");
+		default :  dbg_printf("[Info] Unknown parameter\n\r");
 	}
 }
 
@@ -74,13 +75,28 @@ alt_u8 process_SW_registers(void)
 	alt_u8 res;
 	UartCmd_get_data(&sw_reg);
 
-	if(sw_reg.addr >= 0 || sw_reg.addr <= 3)
+	if(sw_reg.addr >= EPCS_AREA_START_ADDR && sw_reg.addr <= EPCS_AREA_END_ADDR)
 	{
 		res = epcs_commands(&sw_reg);
 		if(res != EPCS_OK)
 			send_response_packet(NIOS_CMD_SW_RG_WRITE_ERR);
 		else if(sw_reg.f_RD_WRn == 0) // response requires only for write
 			send_response_packet(NIOS_CMD_OK);
+	}
+	else if(sw_reg.addr >= RSU_AREA_START_ADDR && sw_reg.addr <= RSU_AREA_END_ADDR)
+	{
+		 send_response_packet(NIOS_CMD_OK); // need to send OK before reconfiguration
+		 RsuCommands (&sw_reg);
+	}
+
+	else if(sw_reg.addr >= FRMCAPT_AREA_START_ADDR && sw_reg.addr <= FRMCAPT_AREA_END_ADDR)
+	{
+		 FrmCaptCommands (&sw_reg);
+		 send_response_packet(NIOS_CMD_OK);
+	}
+	else
+	{
+		dbg_printf("[SW_REG] Unknown address\n\r ");
 	}
 }
 
