@@ -1128,6 +1128,18 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 		}
 		desireSize = g_th*g_tw;
 	}
+	else if (tFName.contains("mono16",Qt::CaseInsensitive)){
+		tImageMode = IMODE_16;	
+		if (tRealSize == 720*576*2){
+			g_th=576;
+			g_tw=720;
+		}
+		else{
+			g_th=288;
+			g_tw=384;
+		}
+		desireSize = g_th*g_tw*2;
+	}
 	
 	qint64 sz = fi.size();
 	ui.teJournal->addMessage("slReadRaw", QString("Размер %1").arg(sz));
