@@ -20,6 +20,9 @@ extern QString g_basePath;
 extern QString selfName;
 extern QString GFTDIPswFileName;
 
+int g_th = 288;
+int g_tw = 384;
+
 QString g_imodes[]=
 {
 	"mono16",
@@ -1044,7 +1047,7 @@ void FTDIDeviceControl::slViewRaw()
 		+"_"+g_imodes[tImageMode]
 		+".raw" ;
 
-	m_inputLength = 384 * 288 * (tImageMode==IMODE_8 ? 1 : 2 );
+	m_inputLength = g_th * g_tw * (tImageMode==IMODE_8 ? 1 : 2 );
 	m_inputFile = new QFile(m_fileName);
 	if (!m_inputFile->open(QIODevice::WriteOnly)) {
 		delete m_inputFile;
@@ -1094,18 +1097,36 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	}
 
 	QFileInfo fi(fileName);
-	QString tFName = fi.fileName(); 	
+	QString tFName = fi.fileName(); 
+	int tRealSize = fi.size();
 
 	int tImageMode = IMODE_16;
-	quint64 desireSize = 384*288*2;
+
+	quint64 desireSize = g_th*g_tw*2;
 	if (tFName.contains("mono12",Qt::CaseInsensitive))
 	{
 		tImageMode = IMODE_12;
-		desireSize = 384*288*2;
+		if (tRealSize == 720*576*2){
+			g_th=576;
+			g_tw=720;
+		}
+		else{
+			g_th=288;
+			g_tw=384;
+		}
+		desireSize = g_th*g_tw*2;
 	}
 	else if (tFName.contains("mono8",Qt::CaseInsensitive)){
-		tImageMode = IMODE_8;
-		desireSize = 384*288;
+		tImageMode = IMODE_8;	
+		if (tRealSize == 720*576){
+			g_th=576;
+			g_tw=720;
+		}
+		else{
+			g_th=288;
+			g_tw=384;
+		}
+		desireSize = g_th*g_tw;
 	}
 	
 	qint64 sz = fi.size();
@@ -1124,30 +1145,30 @@ void FTDIDeviceControl::slDrawPicture(const QString& fileName)
 	}
 	
 	unsigned short tUS=0;
-	unsigned char* tBuffer = new unsigned char[288*384];
-	unsigned short* tBuffer2 = new unsigned short[288*384];
-	for(int i = 0; i < 288; ++i)
+	unsigned char* tBuffer = new unsigned char[g_th*g_tw];
+	unsigned short* tBuffer2 = new unsigned short[g_th*g_tw];
+	for(int i = 0; i < g_th; ++i)
 	{
-		for(int j = 0; j < 384; ++j){
+		for(int j = 0; j < g_tw; ++j){
 			if (tImageMode == IMODE_16){
 				f1.read((char*)(&tUS), 2);	
-				tBuffer2[i*384+j] = tUS;
-				tBuffer[i*384+j] =(unsigned char)(tUS>>8);
+				tBuffer2[i*g_tw+j] = tUS;
+				tBuffer[i*g_tw+j] =(unsigned char)(tUS>>8);
 			}
 			else if (tImageMode == IMODE_12){
 				f1.read((char*)(&tUS), 2);	
-				tBuffer2[i*384+j] = tUS;
-				tBuffer[i*384+j] =(unsigned char)(tUS>>4);
+				tBuffer2[i*g_tw+j] = tUS;
+				tBuffer[i*g_tw+j] =(unsigned char)(tUS>>4);
 			}
 			else {//8				
-				f1.read((char*)&tBuffer[i*384+j], 1);	
-				tBuffer2[i*384+j] = tBuffer[i*384+j];
+				f1.read((char*)&tBuffer[i*g_tw+j], 1);	
+				tBuffer2[i*g_tw+j] = tBuffer[i*g_tw+j];
 			}
 		}
 	}
 	f1.close();
 	ui.teJournal->addMessage("slReadRaw", "Чтение завершено");
-	ui.lView->setRawBuffer(tBuffer, tBuffer2, 384, 288, QImage::Format_Indexed8);
+	ui.lView->setRawBuffer(tBuffer, tBuffer2, g_tw, g_th, QImage::Format_Indexed8);
 	delete[]  tBuffer;
 
 	m_gettingFile = false;	
