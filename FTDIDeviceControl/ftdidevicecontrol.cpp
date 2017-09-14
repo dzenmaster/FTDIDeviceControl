@@ -60,7 +60,7 @@ bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned sho
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
-	m_timer4WaitFrame(0),m_frameCnt(0)
+	m_timer4WaitFrame(0),m_frameCnt(0),m_cutLength(-1)
 {
 	//m_img.fill(127);//init
 	ui.setupUi(this);
@@ -527,6 +527,11 @@ bool FTDIDeviceControl::slWriteFlash()
 		if (nWasRead < 1)
 			break;
 		wasRW+=nWasRead;
+		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>m_cutLength)){
+			nWasRead-=(wasRW-m_cutLength);
+			if (nWasRead<0)
+				nWasRead = 0;
+		}
 		quint16 tLen = nWasRead;
 		memcpy(&buff[3],&tLen,2); 
 		m_waitingThread->setWaitForPacket(PKG_TYPE_ERRORMES);	
@@ -557,6 +562,11 @@ bool FTDIDeviceControl::slWriteFlash()
 			}
 		}		
 		if (nWasRead<1024){
+			if (wasRW==szFile)
+				tSuccsess = true;
+			break;
+		}
+		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>=m_cutLength)){
 			if (wasRW==szFile)
 				tSuccsess = true;
 			break;
@@ -731,6 +741,12 @@ bool FTDIDeviceControl::slWriteLength()
 		QFileInfo fi(fileName);
 		sz = fi.size();
 	}
+	if (ui.cbFileType->currentIndex()==1)
+	{
+		calcCutLength();
+		if (m_cutLength>0)
+			sz = m_cutLength;
+	}
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x02, sz)!=0)	{//Записать полную длину файла
 		//ui.teReceive->append("error : " + m_lastErrorStr);
 		ui.teJournal->addMessage("slWriteLength", QString("Ошибка возврата адреса 1: ") + m_lastErrorStr, 1);
@@ -740,6 +756,40 @@ bool FTDIDeviceControl::slWriteLength()
 	ui.teJournal->addMessage("slWriteLength", "Успешно ");
 	m_mtx.unlock();
 	return true;
+}
+
+void FTDIDeviceControl::calcCutLength()
+{
+	m_cutLength = -1;
+	unsigned char tBuff[64];	
+	quint32 sz = 0;
+	QString fileName = ui.lePathToRBF->text();
+	if (!QFile::exists(fileName)) 
+		return;
+	QFileInfo fi(fileName);
+	sz = fi.size();	
+
+	QFile f1(fileName);
+	if (!f1.open(QIODevice::ReadOnly))
+		return;
+	int tRealLen = 0;
+	for(;;)	
+	{
+		qint64 nWasRead = f1.read((char*)tBuff, 64);				
+		if (nWasRead < 1)
+			break;
+		tRealLen+=nWasRead;
+		bool foundFF = true;
+		for(int i=0;i<64;++i){
+			if (tBuff[i]!=0xFF)
+				foundFF=false;
+		}
+		if (foundFF) { // найден конец
+			m_cutLength = tRealLen;
+			break;
+		}
+	}
+	f1.close();
 }
 
 bool FTDIDeviceControl::slWriteCmdUpdateFirmware()
@@ -890,6 +940,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 
 void FTDIDeviceControl::slUpdateFirmware()
 {	
+	m_cutLength = -1;
 	if ( (m_fileName!=ui.lePathToRBF->text())||(!QFile::exists(m_fileName)) ) {
 		if (!slBrowseRBF()){
 			ui.teJournal->addMessage("slUpdateFirmware", "Ошибка открытия RBF", 1);
@@ -903,6 +954,7 @@ void FTDIDeviceControl::slUpdateFirmware()
 		QMessageBox::critical(0,"ReadFlashID error","ReadFlashID error");
 		return;
 	}
+	//cbFileType
 	ui.statusBar->showMessage("Read Start Address");
 	if (!slReadStartAddress()){	
 		ui.teJournal->addMessage("slUpdateFirmware", "Ошибка чтения стартового адреса", 1);
