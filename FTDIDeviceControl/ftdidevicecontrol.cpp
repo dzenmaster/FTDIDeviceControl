@@ -444,7 +444,7 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 
 bool FTDIDeviceControl::slBrowseRBF()
 {	
-	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF","", "Файлы RBF (*.rbf)"));
+	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RBF (*.rbf);;Файлы RPD (*.rpd) "));
 }
 
 bool FTDIDeviceControl::setRbfFileName(const QString& fn)
@@ -461,6 +461,7 @@ bool FTDIDeviceControl::setRbfFileName(const QString& fn)
 	return false;
 }
 
+//write rbf or rpd files
 bool FTDIDeviceControl::slWriteFlash()
 {
 	if (!m_mtx.tryLock())
