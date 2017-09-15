@@ -1032,6 +1032,13 @@ background-color: grey;
                </widget>
               </item>
               <item>
+               <widget class="QCheckBox" name="cbAutoCheck">
+                <property name="text">
+                 <string>AutoCheck</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer name="horizontalSpacer_3">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>

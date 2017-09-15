@@ -64,7 +64,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 {
 	//m_img.fill(127);//init
 	ui.setupUi(this);
-
+	m_timer = new QTimer;
 	ui.cbFileType->setCurrentIndex(1);
 
 	//version
@@ -140,6 +140,8 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 
 	connect(ui.pbReadRg,SIGNAL(clicked()),SLOT(onReadReg()) );
 	connect(ui.pbWriteRg,SIGNAL(clicked()),SLOT(onWriteReg()) );
+	connect(m_timer,SIGNAL(timeout()),SLOT(onTimerEvent()) );
+	m_timer->start(1000);
 
 	fillDeviceList();	
 }
@@ -163,6 +165,14 @@ FTDIDeviceControl::~FTDIDeviceControl()
 {	
 	closePort();
 	ui.wTerm->close();
+}
+
+void FTDIDeviceControl::onTimerEvent()
+{
+	bool tAutoCheck = ui.cbAutoCheck->isChecked();
+	if (!tAutoCheck)
+		return;
+	onReadTemperature();
 }
 
 	
@@ -677,7 +687,7 @@ bool FTDIDeviceControl::onReadTemperature()
 		return false;
 	}
 	Sleep(200);
-	ui.leReadTemp->setText(QString("%1°").arg((m_temperature>>6)/4.0, 0, 'F', 3)); 
+	ui.leReadTemp->setText(QString("%1°").arg((m_temperature>>6)/4.0, 0, 'F', 2)); 
 	ui.teJournal->addMessage("slReadTemperature", "Успешно ");
 	m_mtx.unlock();
 	return true;

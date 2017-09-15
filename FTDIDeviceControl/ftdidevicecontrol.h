@@ -77,6 +77,7 @@ private:
 	QString m_framesPath;
 	int m_frameCnt;
 	int m_cutLength;
+	QTimer* m_timer;
 
 	bool openPort(int aNum);
 	void closePort();
@@ -129,6 +130,7 @@ private slots:
 	bool onReadTemperature();
 	bool onReadReg();
 	bool onWriteReg();
+	void onTimerEvent();
 
 signals:
 	void newRAWFrame(const QString&);
