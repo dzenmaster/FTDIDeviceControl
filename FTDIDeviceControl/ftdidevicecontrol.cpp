@@ -60,10 +60,12 @@ bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned sho
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
-	m_timer4WaitFrame(0),m_frameCnt(0),m_cutLength(-1)
+	m_timer4WaitFrame(0),m_frameCnt(0),m_cutLength(-1),m_temperature(0)
 {
 	//m_img.fill(127);//init
 	ui.setupUi(this);
+
+	ui.cbFileType->setCurrentIndex(1);
 
 	//version
 	unsigned short v1,v2,v3,v4;
@@ -133,6 +135,11 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.lView, SIGNAL(newState(const QString&, const QString&, const QString&, const QString&)), SLOT(slNewImageState(const QString&, const QString&, const QString&, const QString&)));
 	connect(ui.cbDebugMode, SIGNAL(toggled(bool)), SLOT(slDebugMode(bool)));	
 	connect(ui.pbPass,SIGNAL(clicked()),SLOT(onPassword()) );
+
+	connect(ui.pbReadTemp,SIGNAL(clicked()),SLOT(onReadTemperature()) );
+
+	connect(ui.pbReadRg,SIGNAL(clicked()),SLOT(onReadReg()) );
+	connect(ui.pbWriteRg,SIGNAL(clicked()),SLOT(onWriteReg()) );
 
 	fillDeviceList();	
 }
@@ -395,6 +402,17 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 						//ui.teReceive->append(QString("Start Address = %1\n").arg(m_startAddr));
 						ui.teJournal->addMessage("slNewKadr", QString("Start Address = %1\n").arg(m_startAddr));
 					}
+					else if (swAddr==0x1A){
+						m_temperature =  *((quint32*)&aData[3]);				
+						//ui.teReceive->append(QString("Start Address = %1\n").arg(m_startAddr));
+						ui.teJournal->addMessage("slNewKadr", QString("Temperature = %1\n").arg(m_temperature));
+					}
+
+					QString tStr = ui.leAddrRd->text();
+					qint16 tAddr = tStr.toUShort(0,16);
+					if (tAddr==swAddr)
+						ui.leValRd->setText(QString("%1").arg(*((quint32*)&aData[3]), 0, 16));
+
 				}
 				// a5 5a 03 |07 00|01|03 00| XX XX XX XX
 			 }
@@ -444,7 +462,7 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 
 bool FTDIDeviceControl::slBrowseRBF()
 {	
-	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RBF (*.rbf);;Файлы RPD (*.rpd) "));
+	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RPD (*.rpd);;Файлы RBF (*.rbf)"));
 }
 
 bool FTDIDeviceControl::setRbfFileName(const QString& fn)
@@ -644,6 +662,60 @@ bool FTDIDeviceControl::slReadFlashID()
 		return false;
 	}
 	ui.teJournal->addMessage("slReadFlashID", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::onReadTemperature()
+{
+	if (!m_mtx.tryLock())
+		return false;
+
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, 0x1A)!=0)	{
+		m_mtx.unlock();
+		ui.teJournal->addMessage("slReadTemperature", QString("Ошибка : ") + m_lastErrorStr, 1);			
+		return false;
+	}
+	Sleep(200);
+	ui.leReadTemp->setText(QString("%1°").arg((m_temperature>>6)/4.0, 0, 'F', 3)); 
+	ui.teJournal->addMessage("slReadTemperature", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::onReadReg()
+{
+	if (!m_mtx.tryLock())
+		return false;
+	QString tStr = ui.leAddrRd->text();
+	qint16 tAddr = tStr.toUShort(0,16);
+	if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, tAddr)!=0)	{
+		m_mtx.unlock();
+		ui.teJournal->addMessage("Read Reg", QString("Ошибка : ") + m_lastErrorStr, 1);			
+		return false;
+	}
+	Sleep(200);
+	ui.teJournal->addMessage("Read Reg", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::onWriteReg()
+{
+	if (!m_mtx.tryLock())
+		return false;
+	QString tStr = ui.leAddrWr->text();
+	qint16 tAddr = tStr.toUShort(0,16);
+
+	tStr = ui.leValWr->text();
+	qint32 tValue = tStr.toUInt(0,16);
+		
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 
+		ui.teJournal->addMessage("onWriteReg", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("onWriteReg", "Успешно ");
 	m_mtx.unlock();
 	return true;
 }

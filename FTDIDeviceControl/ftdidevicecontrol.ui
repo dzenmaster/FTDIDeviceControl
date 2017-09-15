@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>861</width>
-    <height>632</height>
+    <height>650</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1015,7 +1015,120 @@ background-color: grey;
                </widget>
               </item>
               <item>
+               <widget class="QPushButton" name="pbReadTemp">
+                <property name="text">
+                 <string>Read Temp.</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="leReadTemp">
+                <property name="maximumSize">
+                 <size>
+                  <width>60</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_13" native="true">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>45</height>
+              </size>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_2">
+              <item row="0" column="3">
+               <widget class="QLabel" name="label_16">
+                <property name="text">
+                 <string>Address</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="3">
+               <widget class="QLineEdit" name="leAddrRd">
+                <property name="inputMask">
+                 <string>hhhh</string>
+                </property>
+                <property name="text">
+                 <string>0000</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="4">
+               <widget class="QLineEdit" name="leValRd">
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1" colspan="2">
+               <widget class="QPushButton" name="pbWriteRg">
+                <property name="text">
+                 <string>Write Reg</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="3">
+               <widget class="QLineEdit" name="leAddrWr">
+                <property name="inputMask">
+                 <string>hhhh</string>
+                </property>
+                <property name="text">
+                 <string>0000</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QPushButton" name="pbReadRg">
+                <property name="text">
+                 <string>Read Reg</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="4">
+               <widget class="QLabel" name="label_17">
+                <property name="text">
+                 <string>Value</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="4">
+               <widget class="QLineEdit" name="leValWr">
+                <property name="inputMask">
+                 <string>hhhhhhhh</string>
+                </property>
+                <property name="text">
+                 <string>00000000</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="6">
+               <spacer name="horizontalSpacer_6">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
                 </property>

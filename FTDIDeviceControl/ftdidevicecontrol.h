@@ -67,6 +67,7 @@ private:
 	int m_fileType;
 	QString m_lastErrorStr;
 	quint32 m_startAddr;
+	quint32 m_temperature;
 	quint32 m_R3;
 	bool m_cancel;
 	bool m_gettingFile;
@@ -125,6 +126,9 @@ private slots:
 
 	void slDebugMode(bool);
 	void onPassword();
+	bool onReadTemperature();
+	bool onReadReg();
+	bool onWriteReg();
 
 signals:
 	void newRAWFrame(const QString&);
