@@ -528,7 +528,7 @@ bool FTDIDeviceControl::slWriteFlash()
 		if (nWasRead < 1)
 			break;
 		wasRW+=nWasRead;
-		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>m_cutLength)){
+		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>m_cutLength)){//if RPD and cut length
 			nWasRead-=(wasRW-m_cutLength);
 			if (nWasRead<0)
 				nWasRead = 0;
@@ -567,12 +567,15 @@ bool FTDIDeviceControl::slWriteFlash()
 				tSuccsess = true;
 			break;
 		}
-		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>=m_cutLength)){
+		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>=m_cutLength)){//if RPD and cut length
 			if (wasRW==szFile)
 				tSuccsess = true;
 			break;
 		}
-		ui.progressBarRBF->setValue((wasRW*100)/szFile);	
+		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)) // if RPD and cut length
+			ui.progressBarRBF->setValue((wasRW*100)/m_cutLength);	
+		else
+			ui.progressBarRBF->setValue((wasRW*100)/szFile);	
 		
 		QApplication::processEvents();	
 	}
@@ -745,9 +748,11 @@ bool FTDIDeviceControl::slWriteLength()
 	if (ui.cbFileType->currentIndex()==1)
 	{
 		calcCutLength();
-		if (m_cutLength>0)
+		if (m_cutLength>0){
 			sz = m_cutLength;
+		}
 	}
+	ui.teJournal->addMessage("slWriteLength", QString("Длина файла %1").arg(sz));
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x02, sz)!=0)	{//Записать полную длину файла
 		//ui.teReceive->append("error : " + m_lastErrorStr);
 		ui.teJournal->addMessage("slWriteLength", QString("Ошибка возврата адреса 1: ") + m_lastErrorStr, 1);
@@ -759,6 +764,7 @@ bool FTDIDeviceControl::slWriteLength()
 	return true;
 }
 
+//расчет обрезанной длины RPD файла
 void FTDIDeviceControl::calcCutLength()
 {
 	m_cutLength = -1;
@@ -769,7 +775,7 @@ void FTDIDeviceControl::calcCutLength()
 		return;
 	QFileInfo fi(fileName);
 	sz = fi.size();	
-
+	ui.teJournal->addMessage("slWriteLength", QString("Исходная длина файла %1").arg(sz));
 	QFile f1(fileName);
 	if (!f1.open(QIODevice::ReadOnly))
 		return;
@@ -785,12 +791,13 @@ void FTDIDeviceControl::calcCutLength()
 			if (tBuff[i]!=0xFF)
 				foundFF=false;
 		}
-		if (foundFF) { // найден конец
+		if ((tRealLen>500000)&&(foundFF)) { // найден конец
 			m_cutLength = tRealLen;
 			break;
 		}
 	}
 	f1.close();
+	ui.teJournal->addMessage("slWriteLength", QString("Новая длина файла %1").arg(m_cutLength));
 }
 
 bool FTDIDeviceControl::slWriteCmdUpdateFirmware()
