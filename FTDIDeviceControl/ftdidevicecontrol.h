@@ -23,7 +23,8 @@ enum
 	PKG_TYPE_ERRORMES=1,
 	PKG_TYPE_ASCIIMES=2,
 	PKG_TYPE_RWSW=3,
-	PKG_TYPE_RWPACKET=4
+	PKG_TYPE_RWPACKET=4,
+	PKG_TYPE_RWHW=5
 };
 
 enum
@@ -134,6 +135,7 @@ private slots:
 	bool onShutter();
 	bool onChangeAutoClb(bool);
 	bool onChangePeriod(int);
+	bool onInversion(bool);
 
 signals:
 	void newRAWFrame(const QString&);

@@ -144,6 +144,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbShutter,SIGNAL(clicked()),SLOT(onShutter()) );
 	connect(ui.gbAutoClb,SIGNAL(toggled(bool)),SLOT(onChangeAutoClb(bool)));
 	connect(ui.sbPeriod,SIGNAL(valueChanged(int)),SLOT(onChangePeriod(int)));
+	connect(ui.cbInversion,SIGNAL(toggled(bool)),SLOT(onInversion(bool)));
 
 	m_timer->start(1000);
 
@@ -564,6 +565,7 @@ bool FTDIDeviceControl::slWriteFlash()
 			nWasRead-=(wasRW-m_cutLength);
 			if (nWasRead<0)
 				nWasRead = 0;
+			wasRW = m_cutLength;
 		}
 		quint16 tLen = nWasRead;
 		memcpy(&buff[3],&tLen,2); 
@@ -812,6 +814,24 @@ bool FTDIDeviceControl::onChangePeriod(int val)
 	return true;
 }
 
+bool FTDIDeviceControl::onInversion(bool stt)//write to HW область
+{
+	if (!m_mtx.tryLock())
+		return false;		
+	qint16 tAddr = 0x1;
+	qint32 tValue = 0x0;
+	if (stt)
+		tValue = 0x1;
+	if (sendPacket(PKG_TYPE_RWHW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 1
+		ui.teJournal->addMessage("onInversion", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("onInversion", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
 bool FTDIDeviceControl::slReadStartAddress()
 {
 	if (!m_mtx.tryLock())
@@ -1056,7 +1076,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 	m_buff[2] = aType;
 	quint32 fullLen = aLen + 5;
 	memcpy(&m_buff[3], &aLen, 2);
-	if (aType==PKG_TYPE_RWSW) { //regRead
+	if ((aType==PKG_TYPE_RWSW)||(aType==PKG_TYPE_RWHW)) { //regRead
 		m_buff[5] = aRdWr;
 		memcpy(&m_buff[6], &aAddr, 2);
 		if (aRdWr==REG_RD) {

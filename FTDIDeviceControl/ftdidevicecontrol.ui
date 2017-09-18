@@ -295,12 +295,12 @@
          <rect>
           <x>220</x>
           <y>10</y>
-          <width>75</width>
+          <width>111</width>
           <height>17</height>
          </rect>
         </property>
         <property name="text">
-         <string>AutoCheck</string>
+         <string>Автообновление</string>
         </property>
        </widget>
        <widget class="QLineEdit" name="leReadTemp">
@@ -360,6 +360,9 @@
          </item>
          <item>
           <widget class="QSpinBox" name="sbPeriod">
+           <property name="suffix">
+            <string> сек</string>
+           </property>
            <property name="minimum">
             <number>1</number>
            </property>
@@ -369,6 +372,19 @@
           </widget>
          </item>
         </layout>
+       </widget>
+       <widget class="QCheckBox" name="cbInversion">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>110</y>
+          <width>70</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Инверсия</string>
+        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
