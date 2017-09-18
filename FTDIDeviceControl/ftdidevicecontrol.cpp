@@ -65,7 +65,7 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	//m_img.fill(127);//init
 	ui.setupUi(this);
 	m_timer = new QTimer;
-	ui.cbFileType->setCurrentIndex(1);
+//	ui.cbFileType->setCurrentIndex(1);
 
 	//version
 	unsigned short v1,v2,v3,v4;
@@ -477,7 +477,7 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 
 bool FTDIDeviceControl::slBrowseRBF()
 {	
-	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RPD (*.rpd);;Файлы RBF (*.rbf)"));
+	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RBF/RPD (*.rbf *.rpd)"));
 }
 
 bool FTDIDeviceControl::setRbfFileName(const QString& fn)
