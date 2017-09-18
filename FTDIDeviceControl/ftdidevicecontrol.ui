@@ -254,7 +254,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -277,6 +277,99 @@
        <attribute name="title">
         <string>Настройки</string>
        </attribute>
+       <widget class="QPushButton" name="pbReadTemp">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>131</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Вычитать температуру</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="cbAutoCheck">
+        <property name="geometry">
+         <rect>
+          <x>220</x>
+          <y>10</y>
+          <width>75</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>AutoCheck</string>
+        </property>
+       </widget>
+       <widget class="QLineEdit" name="leReadTemp">
+        <property name="geometry">
+         <rect>
+          <x>150</x>
+          <y>10</y>
+          <width>60</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>60</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pbShutter">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>50</y>
+          <width>75</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Затвор</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="gbAutoClb">
+        <property name="geometry">
+         <rect>
+          <x>100</x>
+          <y>50</y>
+          <width>197</width>
+          <height>53</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Автокалибровка</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QLabel" name="label_15">
+           <property name="text">
+            <string>Период</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="sbPeriod">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>3600</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
@@ -1011,30 +1104,6 @@ background-color: grey;
                <widget class="QPushButton" name="pbJumpToAppl">
                 <property name="text">
                  <string>Jump to Appl</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pbReadTemp">
-                <property name="text">
-                 <string>Read Temp.</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="leReadTemp">
-                <property name="maximumSize">
-                 <size>
-                  <width>60</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="cbAutoCheck">
-                <property name="text">
-                 <string>AutoCheck</string>
                 </property>
                </widget>
               </item>

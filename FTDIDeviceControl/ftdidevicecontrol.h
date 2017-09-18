@@ -131,6 +131,9 @@ private slots:
 	bool onReadReg();
 	bool onWriteReg();
 	void onTimerEvent();
+	bool onShutter();
+	bool onChangeAutoClb(bool);
+	bool onChangePeriod(int);
 
 signals:
 	void newRAWFrame(const QString&);

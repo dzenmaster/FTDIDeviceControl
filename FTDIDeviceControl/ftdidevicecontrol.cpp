@@ -141,6 +141,10 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.pbReadRg,SIGNAL(clicked()),SLOT(onReadReg()) );
 	connect(ui.pbWriteRg,SIGNAL(clicked()),SLOT(onWriteReg()) );
 	connect(m_timer,SIGNAL(timeout()),SLOT(onTimerEvent()) );
+	connect(ui.pbShutter,SIGNAL(clicked()),SLOT(onShutter()) );
+	connect(ui.gbAutoClb,SIGNAL(toggled(bool)),SLOT(onChangeAutoClb(bool)));
+	connect(ui.sbPeriod,SIGNAL(valueChanged(int)),SLOT(onChangePeriod(int)));
+
 	m_timer->start(1000);
 
 	fillDeviceList();	
@@ -726,6 +730,84 @@ bool FTDIDeviceControl::onWriteReg()
 		return false;
 	}
 	ui.teJournal->addMessage("onWriteReg", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::onShutter()
+{
+	if (!m_mtx.tryLock())
+		return false;	
+	qint16 tAddr = 0x1B;
+	qint32 tValue = 0x21;
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 1
+		ui.teJournal->addMessage("onShutter1", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+
+	tAddr = 0x1C;
+	tValue = 0x1;
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 2
+		ui.teJournal->addMessage("onShutter2", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("onShutter", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::onChangeAutoClb(bool stt)
+{
+	if (!m_mtx.tryLock())
+		return false;		
+	qint16 tAddr = 0x1B;
+	qint32 tValue = 0x22;
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 1
+		ui.teJournal->addMessage("onChangeAutoClb1", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+
+	tAddr = 0x1C;
+	if (stt)
+		tValue = 0x1;
+	else
+		tValue = 0x2;
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 2
+		ui.teJournal->addMessage("onChangeAutoClb2", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("onChangeAutoClb", "Успешно ");
+	m_mtx.unlock();
+	return true;
+}
+
+
+bool FTDIDeviceControl::onChangePeriod(int val)
+{
+	if (!m_mtx.tryLock())
+		return false;		
+	qint16 tAddr = 0x1B;
+	qint32 tValue = 0x23;
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 1
+		ui.teJournal->addMessage("onChangePeriod", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+
+	tAddr = 0x1C;
+	tValue = val;
+
+	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tValue)!=0)	{//Записать 2
+		ui.teJournal->addMessage("onChangePeriod", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("onChangePeriod", "Успешно ");
 	m_mtx.unlock();
 	return true;
 }
