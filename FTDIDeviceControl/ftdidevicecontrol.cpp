@@ -60,7 +60,7 @@ bool getVersionInfo(unsigned short* pwMSHW, unsigned short* pwMSLW, unsigned sho
 FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	: QMainWindow(parent), m_handle(0),m_waitingThread(0), m_flashID(-1),
 	m_inputLength(0),m_readBytes(0),m_inputFile(0),m_startAddr(0),m_fileType(FILE_RBF),
-	m_timer4WaitFrame(0),m_frameCnt(0),m_cutLength(-1),m_temperature(0)
+	m_timer4WaitFrame(0),m_frameCnt(0)/*,m_cutLength(-1)*/,m_temperature(0)
 {
 	//m_img.fill(127);//init
 	ui.setupUi(this);
@@ -561,12 +561,12 @@ bool FTDIDeviceControl::slWriteFlash()
 		if (nWasRead < 1)
 			break;
 		wasRW+=nWasRead;
-		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>m_cutLength)){//if RPD and cut length
+	/*	if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>m_cutLength)){//if RPD and cut length
 			nWasRead-=(wasRW-m_cutLength);
 			if (nWasRead<0)
 				nWasRead = 0;
 			wasRW = m_cutLength;
-		}
+		}*/
 		quint16 tLen = nWasRead;
 		memcpy(&buff[3],&tLen,2); 
 		m_waitingThread->setWaitForPacket(PKG_TYPE_ERRORMES);	
@@ -601,14 +601,14 @@ bool FTDIDeviceControl::slWriteFlash()
 				tSuccsess = true;
 			break;
 		}
-		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>=m_cutLength)){//if RPD and cut length
+	/*	if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)&&(wasRW>=m_cutLength)){//if RPD and cut length
 			if (wasRW==szFile)
 				tSuccsess = true;
 			break;
-		}
-		if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)) // if RPD and cut length
+		}*/
+	/*	if ((ui.cbFileType->currentIndex()==1)&&(m_cutLength>0)) // if RPD and cut length
 			ui.progressBarRBF->setValue((wasRW*100)/m_cutLength);	
-		else
+		else*/
 			ui.progressBarRBF->setValue((wasRW*100)/szFile);	
 		
 		QApplication::processEvents();	
@@ -929,13 +929,13 @@ bool FTDIDeviceControl::slWriteLength()
 		QFileInfo fi(fileName);
 		sz = fi.size();
 	}
-	if (ui.cbFileType->currentIndex()==1)
+/*	if (ui.cbFileType->currentIndex()==1)
 	{
 		calcCutLength();
 		if (m_cutLength>0){
 			sz = m_cutLength;
 		}
-	}
+	}*/
 	ui.teJournal->addMessage("slWriteLength", QString("Длина файла %1").arg(sz));
 	if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, 0x02, sz)!=0)	{//Записать полную длину файла
 		//ui.teReceive->append("error : " + m_lastErrorStr);
@@ -949,7 +949,7 @@ bool FTDIDeviceControl::slWriteLength()
 }
 
 //расчет обрезанной длины RPD файла
-void FTDIDeviceControl::calcCutLength()
+/*void FTDIDeviceControl::calcCutLength()
 {
 	m_cutLength = -1;
 	unsigned char tBuff[64];	
@@ -982,7 +982,7 @@ void FTDIDeviceControl::calcCutLength()
 	}
 	f1.close();
 	ui.teJournal->addMessage("slWriteLength", QString("Новая длина файла %1").arg(m_cutLength));
-}
+}*/
 
 bool FTDIDeviceControl::slWriteCmdUpdateFirmware()
 {
@@ -1132,7 +1132,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 
 void FTDIDeviceControl::slUpdateFirmware()
 {	
-	m_cutLength = -1;
+//	m_cutLength = -1;
 	if ( (m_fileName!=ui.lePathToRBF->text())||(!QFile::exists(m_fileName)) ) {
 		if (!slBrowseRBF()){
 			ui.teJournal->addMessage("slUpdateFirmware", "Ошибка открытия RBF", 1);

@@ -77,7 +77,7 @@ private:
 	QTimer* m_timer4WaitFrame;
 	QString m_framesPath;
 	int m_frameCnt;
-	int m_cutLength;
+//	int m_cutLength;
 	QTimer* m_timer;
 
 	bool openPort(int aNum);
@@ -89,7 +89,7 @@ private:
 	bool setRbfFileName(const QString&);
 	void toLog(const QString& logStr);
 	void setDebugMode(bool);
-	void calcCutLength();
+//	void calcCutLength();
 
 
 private slots:
