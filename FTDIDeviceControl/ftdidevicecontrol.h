@@ -137,6 +137,9 @@ private slots:
 	bool onChangePeriod(int);
 	bool onInversion(bool);
 
+	bool newHiDiap(int);
+	bool newLowDiap(int);
+
 signals:
 	void newRAWFrame(const QString&);
 	void sigUpdateList();

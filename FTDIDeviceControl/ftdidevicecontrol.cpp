@@ -146,6 +146,11 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 	connect(ui.sbPeriod,SIGNAL(valueChanged(int)),SLOT(onChangePeriod(int)));
 	connect(ui.cbInversion,SIGNAL(toggled(bool)),SLOT(onInversion(bool)));
 
+	connect(ui.hsHiDiap,SIGNAL(sliderMoved(int)),SLOT(newHiDiap(int)));
+	connect(ui.hsLowDiap,SIGNAL(sliderMoved(int)),SLOT(newLowDiap(int)));
+	connect(ui.sbHiDiap,SIGNAL(valueChanged(int)), SLOT(newHiDiap(int)));
+	connect(ui.sbLowDiap,SIGNAL(valueChanged(int)), SLOT(newLowDiap(int)));
+
 	m_timer->start(1000);
 
 	fillDeviceList();	
@@ -831,6 +836,55 @@ bool FTDIDeviceControl::onInversion(bool stt)//write to HW область
 	m_mtx.unlock();
 	return true;
 }
+
+bool FTDIDeviceControl::newHiDiap(int val)
+{
+	ui.sbHiDiap->blockSignals(true);
+	ui.hsHiDiap->blockSignals(true);
+	ui.sbHiDiap->setValue(val);
+	ui.hsHiDiap->setValue(val);
+	ui.sbHiDiap->blockSignals(false);
+	ui.hsHiDiap->blockSignals(false);
+
+	if (!m_mtx.tryLock())
+		return false;		
+	qint16 tAddr = 0x2;
+	qint32 tValue = val;
+	if (sendPacket(PKG_TYPE_RWHW, 7, REG_WR, tAddr, tValue)!=0)	{
+		ui.teJournal->addMessage("newHiDiap", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("newHiDiap", "Успешно ");
+	m_mtx.unlock();
+
+	return true;
+}
+
+bool FTDIDeviceControl::newLowDiap(int val)
+{
+	ui.sbLowDiap->blockSignals(true);
+	ui.hsLowDiap->blockSignals(true);
+	ui.sbLowDiap->setValue(val);
+	ui.hsLowDiap->setValue(val);
+	ui.sbLowDiap->blockSignals(false);
+	ui.hsLowDiap->blockSignals(false);
+	
+	if (!m_mtx.tryLock())
+		return false;		
+	qint16 tAddr = 0x3;
+	qint32 tValue = val;
+	if (sendPacket(PKG_TYPE_RWHW, 7, REG_WR, tAddr, tValue)!=0)	{
+		ui.teJournal->addMessage("newLowDiap", QString("Ошибка : ") + m_lastErrorStr, 1);
+		m_mtx.unlock();
+		return false;
+	}
+	ui.teJournal->addMessage("newLowDiap", "Успешно ");
+	m_mtx.unlock();
+
+	return true;
+}	
+
 
 bool FTDIDeviceControl::slReadStartAddress()
 {
