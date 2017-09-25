@@ -34,4 +34,4 @@ private:
 	int m_errorCode;
 
 };
-#endif // FTDIDECODER_H
+#endif // WAITINGTHREAD_H
