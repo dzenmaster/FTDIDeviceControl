@@ -31,7 +31,11 @@
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QLineEdit" name="leOldPsw"/>
+    <widget class="QLineEdit" name="leOldPsw">
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
    </item>
    <item row="3" column="0" colspan="2">
     <widget class="QWidget" name="widget_2" native="true">
@@ -129,7 +133,11 @@
     </widget>
    </item>
    <item row="2" column="1">
-    <widget class="QLineEdit" name="leNewPsw"/>
+    <widget class="QLineEdit" name="leNewPsw">
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
