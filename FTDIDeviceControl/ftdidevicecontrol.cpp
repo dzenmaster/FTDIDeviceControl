@@ -379,22 +379,29 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 				unsigned char tID = aData[0];
 				switch (tID) {
 				case 0:
-					ui.leModuleType->setText(QString("%1").arg(aData[1]));	
-					ui.teJournal->addMessage("slNewKadr", QString("Тип модуля %1").arg(aData[1]));
+					if (aLen>1){
+						ui.leModuleType->setText(QString("%1").arg(aData[1]));	
+						ui.teJournal->addMessage("slNewKadr", QString("Тип модуля %1").arg(aData[1]));
+					}
 					break;
 				case 1:
-					ui.leSerialNumber->setText(QString("%1").arg(aData[1]));	
-					ui.teJournal->addMessage("slNewKadr", QString("Серийный номер %1").arg(aData[1]));
+					if (aLen>1){
+						ui.leSerialNumber->setText(QString("%1").arg(aData[1]));	
+						ui.teJournal->addMessage("slNewKadr", QString("Серийный номер %1").arg(aData[1]));
+					}
 					break;
 				case 2:
 					//ui.leFirmwareVersion->setText(QString("%1").arg(aData[1]));	
-					ui.leFirmwareVersion->setText(versionToStr(aData, aLen));
-					ui.teJournal->addMessage("slNewKadr", QString("Версия Firmware %1").arg(aData[1]));
+					if (aLen>1){
+						ui.leFirmwareVersion->setText(versionToStr(&aData[1], aLen-1));
+						ui.teJournal->addMessage("slNewKadr", QString("Версия Firmware %1").arg(aData[1]));
+					}
 					break;
-				case 3:
-					ui.leSoftwareVersion->setText(QString("%1").arg(aData[1]));	
-					ui.teJournal->addMessage("slNewKadr", QString("Версия Software %1").arg(aData[1]));
-					break;
+			/*	case 3:{
+						ui.leSoftwareVersion->setText(QString("%1").arg(aData[1]));	
+						ui.teJournal->addMessage("slNewKadr", QString("Версия Software %1").arg(aData[1]));
+					}
+					break;*/
 			}
 			break;
 			}
