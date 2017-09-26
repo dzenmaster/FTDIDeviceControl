@@ -363,7 +363,7 @@ QString FTDIDeviceControl::versionToStr(const unsigned char* str, int len)
 		outStr+=QString("%1.").arg((str[i]&0xF),0,16);
 	}
 	outStr.chop(1);
-	return outStr;
+	return outStr.toUpper();
 }
 
 void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData)
