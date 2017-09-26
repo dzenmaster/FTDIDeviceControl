@@ -68,9 +68,9 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 //	ui.cbFileType->setCurrentIndex(1);
 
 	//version
-	unsigned short v1,v2,v3,v4;
-	if (getVersionInfo(&v1,&v2,&v3,&v4))
-		setWindowTitle(QString("FTDI Device Control ver. %1.%2.%3.%4").arg(v1).arg(v2).arg(v3).arg(v4) );
+//	unsigned short v1,v2,v3,v4;
+//	if (getVersionInfo(&v1,&v2,&v3,&v4))
+//		setWindowTitle(QString("FTDI Device Control ver. %1.%2.%3.%4").arg(v1).arg(v2).arg(v3).arg(v4) );
 
 	m_framesPath = g_basePath+"Frames";
 	if (!QFile::exists(m_framesPath)) {
@@ -351,6 +351,20 @@ bool FTDIDeviceControl::slGetInfo()
 	return tResult;
 }
 
+QString FTDIDeviceControl::versionToStr(const unsigned char* str, int len)
+{
+	QString outStr;
+	if (len>4)
+		 len = 4;
+	if ((len<1)||(str==0))
+		return outStr;
+	for (int i = 0; i < len; ++i) {
+		outStr+=QString("%1.").arg((str[i]>>4),0,16);
+		outStr+=QString("%1.").arg((str[i]&0xF),0,16);
+	}
+	outStr.chop(1);
+}
+
 void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, const unsigned char* aData)
 {
 	if ((!aData)||(!aLen)||(aLen>2048)){
@@ -372,7 +386,8 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 					ui.teJournal->addMessage("slNewKadr", QString("Серийный номер %1").arg(aData[1]));
 					break;
 				case 2:
-					ui.leFirmwareVersion->setText(QString("%1").arg(aData[1]));	
+					//ui.leFirmwareVersion->setText(QString("%1").arg(aData[1]));	
+					ui.leFirmwareVersion->setText(versionToStr(aData, aLen));
 					ui.teJournal->addMessage("slNewKadr", QString("Версия Firmware %1").arg(aData[1]));
 					break;
 				case 3:

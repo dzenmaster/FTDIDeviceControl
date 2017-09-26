@@ -79,7 +79,7 @@ private:
 	int m_frameCnt;
 //	int m_cutLength;
 	QTimer* m_timer;
-
+	
 	bool openPort(int aNum);
 	void closePort();
 	int waitForPacket(int& tt, int& aCode);
@@ -90,6 +90,7 @@ private:
 //	void toLog(const QString& logStr);
 	void setDebugMode(bool);
 //	void calcCutLength();
+	QString versionToStr(const unsigned char*, int);
 
 
 private slots:
