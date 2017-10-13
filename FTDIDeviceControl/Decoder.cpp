@@ -1,3 +1,4 @@
+#include <string.h>
 #include "Decoder.h"
 
 CDecoder::CDecoder()
@@ -5,12 +6,13 @@ CDecoder::CDecoder()
 	reset();
 	m_curKadr = 0;
 	m_lastKadr = 0;
+	m_length = 0;
+	memset(m_kadr,0,8*2048);
 }
 void CDecoder::reset()
 {
-	m_curPos=0;
-	m_syncState = 0;
 	m_curPos = 0;
+	m_syncState = 0;	
 }
 
 bool CDecoder::pushByte(unsigned char b)

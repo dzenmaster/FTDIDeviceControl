@@ -501,6 +501,19 @@
          <string>Расширение нижнего диапазона</string>
         </property>
        </widget>
+       <widget class="QPushButton" name="pbBurnParsToFlash">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>290</y>
+          <width>191</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Прошить параметры во Flash</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">

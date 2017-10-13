@@ -141,6 +141,8 @@ private slots:
 	bool newHiDiap(int);
 	bool newLowDiap(int);
 
+	bool onBurnParsToFlash();
+
 signals:
 	void newRAWFrame(const QString&);
 	void sigUpdateList();

@@ -8,7 +8,7 @@ CImageLabel::CImageLabel(QWidget * parent, Qt::WindowFlags f)
 	: QLabel(parent, f), m_img(0), m_pixInPix(1),
 	m_cx(0), m_cy(0), m_rw(0), m_rh(0), m_arReal(1),
 	m_transMode(Qt::FastTransformation),
-	m_xStart(0),m_yStart(0)
+	m_xStart(0),m_yStart(0),m_maxPixInPix(1)
 {	
 	m_sizeStr = "0x0";
 	m_positionStr = "0x0";
@@ -37,8 +37,8 @@ void CImageLabel::setRawBuffer(const unsigned char* aBuf, const unsigned short* 
 	}
 
 	m_transMode = aTM;
-	if (m_img)
-		delete m_img;
+//	if (m_img)
+	delete m_img;
 	
 
 	m_rh = aHei;

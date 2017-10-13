@@ -31,7 +31,7 @@ void CWaitingThread::run()
 		if(m_handle) {
 			status = FT_GetQueueStatus(m_handle, &dwRead); //  dwRead = length to read in bytes
 			if(status == FT_OK) {
-				m_string="";
+				m_string.clear();
 				while(dwRead) {
 					status = FT_Read(m_handle, &b, 1, &dwRXBytes);
 					if(status == FT_OK) {
