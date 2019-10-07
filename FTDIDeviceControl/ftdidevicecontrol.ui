@@ -249,7 +249,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -1332,6 +1332,20 @@ background-color: grey;
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item row="1" column="5">
+               <widget class="QPushButton" name="pbReadRgFile">
+                <property name="text">
+                 <string>Read Reg from file</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="5">
+               <widget class="QPushButton" name="pbWriteRgFile">
+                <property name="text">
+                 <string>Write Reg from file</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>

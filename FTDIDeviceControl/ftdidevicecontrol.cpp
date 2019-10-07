@@ -8,6 +8,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QProcess>
+#include <QTextStream>
 
 
 #include "WaitingThread.h"
@@ -140,6 +141,9 @@ FTDIDeviceControl::FTDIDeviceControl(QWidget *parent)
 
 	connect(ui.pbReadRg,SIGNAL(clicked()),SLOT(onReadReg()) );
 	connect(ui.pbWriteRg,SIGNAL(clicked()),SLOT(onWriteReg()) );
+	connect(ui.pbReadRgFile, SIGNAL(clicked()), SLOT(onReadRegFile()));
+	connect(ui.pbWriteRgFile, SIGNAL(clicked()), SLOT(onWriteRegFile()));
+
 	connect(m_timer,SIGNAL(timeout()),SLOT(onTimerEvent()) );
 	connect(ui.pbShutter,SIGNAL(clicked()),SLOT(onShutter()) );
 	connect(ui.gbAutoClb,SIGNAL(toggled(bool)),SLOT(onChangeAutoClb(bool)));
@@ -454,9 +458,9 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 
 					QString tStr = ui.leAddrRd->text();
 					qint16 tAddr = tStr.toUShort(0,16);
-					if (tAddr==swAddr)
-						ui.leValRd->setText(QString("%1").arg(*((quint32*)&aData[3]), 0, 16));
-
+					if (tAddr == swAddr) {
+						ui.leValRd->setText(QString("%1").arg(*((quint32*)&aData[3]), 0, 16));						
+					}
 				}
 				// a5 5a 03 |07 00|01|03 00| XX XX XX XX
 			 }
@@ -506,7 +510,8 @@ int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 
 bool FTDIDeviceControl::slBrowseRBF()
 {	
-	return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RBF/RPD (*.rbf *.rpd)"));
+	//return setRbfFileName(QFileDialog::getOpenFileName(this,"Открыть RBF/RPD","", "Файлы RBF/RPD (*.rbf *.rpd)",Q_NULLPTR, QFileDialog::DontUseNativeDialog));
+	return setRbfFileName(QFileDialog::getOpenFileName(this, "Открыть RBF/RPD", "", "Файлы RBF/RPD (*.rbf *.rpd)" ));
 }
 
 bool FTDIDeviceControl::setRbfFileName(const QString& fn)
@@ -762,6 +767,150 @@ bool FTDIDeviceControl::onWriteReg()
 	}
 	ui.teJournal->addMessage("onWriteReg", "Успешно ");
 	m_mtx.unlock();
+	return true;
+}
+
+bool FTDIDeviceControl::onReadRegFile()
+{
+	QString rFile = QFileDialog::getOpenFileName(this, "Открыть txt", "", "Файлы txt (*.txt )");
+	if (!QFile::exists(rFile)) {
+		QMessageBox::critical(this, " ", QString("Файл %1 для не найден").arg(rFile));
+		return false;
+	}
+
+	ui.progressBarRBF->setValue(0);
+
+	QFile f1(rFile);
+	if (!f1.open(QIODevice::ReadOnly)) {
+		QMessageBox::critical(this, " ", QString("Файл %1 для не найден").arg(rFile));
+		return false;
+	}
+	char tLine[256];
+	QVector<qint16> tvRegs;
+	ui.progressBarRBF->setValue(1);
+	while (f1.readLine(tLine, 256) != -1) {
+		if ((tLine[0] == 0) || (tLine[0] == '#'))
+			continue;
+		int reg1 = 0;
+		int len = sscanf(tLine, "%x", &reg1);
+		if (len != 1) {
+			QMessageBox::critical(this, " ", "ошибка формата файла");
+			continue;
+		}
+		tvRegs.push_back(reg1);
+	}
+	f1.close();
+	if (tvRegs.size() == 0) {
+		QMessageBox::critical(this, " ", "Пустой файл");
+		return false;
+	}
+
+	QFile f2(rFile.mid(0, rFile.size() - 4) + "_res.txt");
+	if (!f2.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QMessageBox::critical(this, " ", "Не могу создать выходной файл");
+		return false;
+	}
+	QTextStream stf2(&f2);	
+	stf2 << "#hex addresses and vals without 0x\n";
+	for (int i = 0; i < tvRegs.size(); ++i)
+	{
+		ui.progressBarRBF->setValue((100 * i) / tvRegs.size());
+		if (!m_mtx.tryLock())
+			return false;
+		qint16 tAddr = tvRegs[i];
+		ui.leAddrRd->setText(QString("%1").arg(tAddr, 4, 16, QLatin1Char('0')));
+		if (sendPacket(PKG_TYPE_RWSW, 3, REG_RD, tAddr) != 0) {
+			m_mtx.unlock();
+			ui.teJournal->addMessage("Read Reg", QString("Ошибка : ") + m_lastErrorStr, 1);
+			QMessageBox::critical(this, " ", "Ошибка чтения регистра");
+			return false;
+		}
+		Sleep(200);
+		ui.teJournal->addMessage(QString("Read Reg 0x%1").arg(tAddr, 0, 16), "Успешно ");
+		m_mtx.unlock();
+		QApplication::processEvents();
+		stf2 << QString("%1").arg(tAddr, 4, 16, QLatin1Char('0')) << " " << ui.leValRd->text() << "\n";
+	}
+	f2.close();
+	ui.progressBarRBF->setValue(100);
+	ui.teJournal->addMessage("onReadRegFile", "Пакетное чтение регистров завершено");
+	ui.statusBar->showMessage("Пакетное чтение регистров завершено");
+	QMessageBox::information(0, "onReadRegFile", "Пакетное чтение регистров завершено");
+
+
+	//if (ui.cbOpenFolder->isChecked()) {
+	QFileInfo fi(rFile);
+	QString tdir = QDir::toNativeSeparators(fi.absoluteDir().absolutePath());
+	QProcess::execute("Explorer " + tdir);
+	ui.progressBarRBF->setValue(0);
+	return true;
+}
+
+bool FTDIDeviceControl::onWriteRegFile()
+{
+	ui.progressBarRBF->setValue(0);
+	QString wFile = QFileDialog::getOpenFileName(this, "Открыть txt", "", "Файлы txt (*.txt )");
+	if (!QFile::exists(wFile)) {
+		QMessageBox::critical(this, " ", QString("Файл %1 для не найден").arg(wFile));
+		return false;
+	}
+
+	QFile f1(wFile);
+	if (!f1.open(QIODevice::ReadOnly)) {
+		QMessageBox::critical(this, " ", QString("Файл %1 для не найден").arg(wFile));
+		return false;
+	}
+	char tLine[256];
+	QVector<qint16> tvRegsA;
+	QVector<unsigned> tvRegsV;
+	ui.progressBarRBF->setValue(1);
+	while (f1.readLine(tLine, 256) != -1) {
+		if ((tLine[0] == 0) || (tLine[0] == '#'))
+			continue;
+		int regA = 0;
+		unsigned regV = 0;
+		int len = sscanf(tLine, "%x %x", &regA , &regV);
+		if (len != 2) {
+			QMessageBox::critical(this, " ", "Ошибка формата файла");
+			continue;
+		}
+		tvRegsA.push_back(regA);
+		tvRegsV.push_back(regV);
+	}
+	f1.close();
+	if ((tvRegsA.size() == 0) || (tvRegsV.size() == 0) || (tvRegsV.size()!= tvRegsA.size())) {
+		QMessageBox::critical(this, " ", "Пустой файл");
+		return false;
+	}
+		
+	for (int i = 0; i < tvRegsA.size(); ++i)
+	{
+		ui.progressBarRBF->setValue((100 * i) / tvRegsA.size());
+		if (!m_mtx.tryLock())
+			return false;
+		qint16 tAddr = tvRegsA[i];
+		unsigned tVal = tvRegsV[i];
+		ui.leAddrWr->setText(QString("%1").arg(tAddr, 4, 16, QLatin1Char('0')));
+		ui.leValWr->setText(QString("%1").arg(tVal, 4, 16, QLatin1Char('0')));
+
+		if (sendPacket(PKG_TYPE_RWSW, 7, REG_WR, tAddr, tVal) != 0) {//Записать 
+			ui.teJournal->addMessage("onWriteReg", QString("Ошибка : ") + m_lastErrorStr, 1);
+			QMessageBox::critical(this, " ", "Ошибка записи регистра");
+			m_mtx.unlock();
+			return false;
+		}
+		Sleep(16);
+		ui.teJournal->addMessage(QString("Write Reg 0x%1 val 0x%2").arg(tAddr, 0, 16).arg(tVal, 0, 16), "Успешно ");
+		m_mtx.unlock();
+		QApplication::processEvents();
+	}
+	
+	ui.progressBarRBF->setValue(100);
+	ui.teJournal->addMessage("oWriteRegFile", "Пакетная запись регистров завершена");
+	ui.statusBar->showMessage("Пакетная запись регистров завершена");
+	QMessageBox::information(0, "onWriteRegFile", "Пакетная запись регистров завершена");
+	ui.progressBarRBF->setValue(0);
+
 	return true;
 }
 

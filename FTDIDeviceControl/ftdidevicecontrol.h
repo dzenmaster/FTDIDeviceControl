@@ -132,6 +132,8 @@ private slots:
 	bool onReadTemperature();
 	bool onReadReg();
 	bool onWriteReg();
+	bool onReadRegFile();
+	bool onWriteRegFile();
 	void onTimerEvent();
 	bool onShutter();
 	bool onChangeAutoClb(bool);
