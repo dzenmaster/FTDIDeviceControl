@@ -59,6 +59,7 @@ private:
 	CWaitingThread* m_waitingThread; 
 	quint32 m_flashID;
 	QMutex m_mtx;
+	QMutex m_termMtx;
 	quint64 m_readBytes;
 	
 	quint64 m_inputLength;

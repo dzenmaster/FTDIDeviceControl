@@ -318,12 +318,15 @@ QByteArray FTDIDeviceControl::hexStringToByteArray(QString& aStr)
 	return ba;
 }
 
-
 void FTDIDeviceControl::addDataToTE(const QString& str)
 {
+	if (!m_termMtx.tryLock(200)) {		
+		return;
+	}	
 	ui.teReceive->moveCursor (QTextCursor::End);
 	ui.teReceive->insertPlainText (str);
-	QApplication::processEvents();
+	//QApplication::processEvents();
+	m_termMtx.unlock();	
 }
 
 void FTDIDeviceControl::slOpen()
@@ -496,7 +499,7 @@ void FTDIDeviceControl::slNewKadr(unsigned char aType, unsigned short aLen, cons
 
 int FTDIDeviceControl::waitForPacket(int& tt , int& aCode)
 {
-	for(int i = 0; i < 500; ++i) {
+	for(int i = 0; i < 625; ++i) { // 10 sec
 		Sleep(16);
 		if (m_waitingThread->getWaitForPacket()==false){
 			tt = 16*i;
@@ -1329,9 +1332,11 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 		typeToWait=PKG_TYPE_INFO;
 
 	DWORD ret;
-	m_waitingThread->setWaitForPacket(typeToWait);	
+	
+	m_waitingThread->setWaitForPacket(typeToWait);
+	
 	FT_STATUS ftStatus = FT_Write(m_handle, m_buff, fullLen, &ret);
-
+	
 	if (ftStatus!=FT_OK) {		
 		m_lastErrorStr = "FT_Write error";
 		return -1;
@@ -1339,6 +1344,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 
 	int tWTime=0;
 	int tCode=-1;
+	
 	if (waitForPacket(tWTime, tCode)==1) {		
 		m_lastErrorStr = "Таймаут ожидания\n";		
 		return -1;
@@ -1353,6 +1359,7 @@ int FTDIDeviceControl::sendPacket(unsigned char aType, quint16 aLen, unsigned ch
 			}
 		}
 	}
+	
 	QApplication::processEvents();
 	return 0;
 }
